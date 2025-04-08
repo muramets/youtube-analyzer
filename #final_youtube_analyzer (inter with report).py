@@ -5,6 +5,7 @@ from collections import Counter
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from googleapiclient.errors import HttpError
 
 # Set page title and configuration
 st.set_page_config(
@@ -134,12 +135,21 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-# YouTube API Key - Replace with your actual API key
-YOUTUBE_API_KEY = "AIzaSyDCRnjNNuvzmp45rYZiGae7q6RggG4d3NI"
-
 # Initialize YouTube API client
-def get_youtube_client():
-    return build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+def get_youtube_client(api_key):
+    """Create a YouTube API client with the provided API key."""
+    if not api_key or api_key.strip() == "":
+        return None
+    return build('youtube', 'v3', developerKey=api_key)
+
+# Disable automatic rerunning
+st.cache_data(ttl=None)
+def get_session_state():
+    """Get session state to prevent auto-refresh."""
+    return {}
+
+# Initialize session state
+get_session_state()
 
 # Extract video ID from YouTube URL
 def extract_video_id(url):
@@ -158,9 +168,12 @@ def extract_video_id(url):
     return None
 
 # Fetch video details from YouTube API
-def get_video_details(video_id):
+def get_video_details(youtube, video_id):
+    if not youtube:
+        st.error("YouTube API client not initialized. Please enter a valid API key in the sidebar.")
+        return None
+        
     try:
-        youtube = get_youtube_client()
         
         # Get video details
         video_response = youtube.videos().list(
@@ -488,12 +501,44 @@ def generate_excel_file(videos_data, common_title_words, common_tags, common_wor
 
 # Main application
 def main():
+    # Create sidebar for API key input
+    with st.sidebar:
+        st.header("YouTube API Configuration")
+        api_key = st.text_input(
+            "Enter your YouTube API Key",
+            type="password",
+            help="Get your API key from the Google Cloud Console"
+        )
+        
+        if api_key:
+            st.success("API key provided! You can now analyze videos.")
+        else:
+            st.warning("Please enter your YouTube API key to use this application.")
+            st.markdown("""
+            ### How to get a YouTube API Key:
+            1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+            2. Create a new project or select an existing one
+            3. Enable the YouTube Data API v3
+            4. Create an API key
+            5. Enter the key in the field above
+            """)
+        
+        # Add a note about API usage
+        st.info("Note: This application makes API calls only when you analyze videos, not automatically.")
+    
+    # Initialize YouTube client with the provided API key
+    youtube = get_youtube_client(api_key)
+    
     # Ensure NLTK resources are downloaded at startup
     download_nltk_resources()
     
     # Display content directly without a separate container
     st.title("YouTube Video Analyzer")
     st.write("Enter YouTube video URLs to analyze common patterns and details.")
+    
+    # Check if API key is provided
+    if not api_key:
+        st.warning("Please enter your YouTube API key in the sidebar to use this application.")
     
     # Initialize session state for storing analysis results
     if 'download_clicked' not in st.session_state:
@@ -552,6 +597,23 @@ def main():
     
     # Analyze button
     if st.button("🔍 Analyze Videos"):
+        # Check if API key is provided
+        if not api_key:
+            st.error("Please enter your YouTube API key in the sidebar before analyzing videos.")
+            return
+            
+        # Test the API key with a simple request
+        try:
+            with st.spinner("Validating API key..."):
+                test_response = youtube.channels().list(
+                    part="snippet",
+                    id="UC_x5XG1OV2P6uZZ5FSM9Ttw"  # Google Developers channel
+                ).execute()
+        except HttpError as e:
+            if "API key not valid" in str(e):
+                st.error("The API key you entered is not valid. Please check and try again.")
+                return
+            # Other errors are ok - might be quota or permission issues that won't affect basic functionality
         # Reset analysis state when new analysis is requested
         st.session_state.analysis_complete = False
         st.session_state.download_clicked = False
@@ -574,7 +636,7 @@ def main():
                     invalid_urls.append(url)
                     continue
                 
-                video_info = get_video_details(video_id)
+                video_info = get_video_details(youtube, video_id)
                 if video_info:
                     videos_data.append(video_info)
             
