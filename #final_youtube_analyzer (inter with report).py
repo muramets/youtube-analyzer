@@ -591,115 +591,86 @@ def main():
         words_percentage = st.session_state.words_percentage
         unique_desc_words = st.session_state.unique_desc_words
         
-        # Display results with enhanced visual presentation
-        st.subheader("НОВЫЙ АНАЛИЗ РЕЗУЛЬТАТОВ (NEW ANALYSIS RESULTS)")
-        
-        # Create a container with a colored background for the analysis results
-        st.markdown("""
-        <style>
-        .analysis-container {
-            background-color: #f0f8ff;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        .section-header {
-            color: #0066cc;
-            font-weight: bold;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        .common-item {
-            color: #008000;
-            font-weight: 500;
-        }
-        .unique-item {
-            color: #800080;
-            font-weight: 500;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+        # Display results in scrollable tables
+        st.subheader("Analysis Results")
         
         # Common words in titles section
-        st.markdown('<div class="analysis-container">', unsafe_allow_html=True)
-        st.markdown('<div class="section-header">Общие слова в названиях (Common Words in Titles)</div>', unsafe_allow_html=True)
+        st.markdown("##### Common Words in Titles")
         if common_title_words:
-            # Create a formatted list of words with their occurrence counts
-            title_words_list = []
-            for i, (word, count, total) in enumerate(common_title_words, 1):
-                title_words_list.append(f'<span class="common-item">{i}. {word} (встречается в {count} из {total} видео)</span>')
-            st.markdown('<br>'.join(title_words_list), unsafe_allow_html=True)
+            # Create a dataframe for common title words
+            title_words_data = {
+                "Word": [word for word, count, total in common_title_words],
+                "Appears in": [f"{count} out of {total} videos" for word, count, total in common_title_words]
+            }
+            title_df = pd.DataFrame(title_words_data)
+            st.dataframe(title_df, height=200)
         else:
-            st.write("Общих слов в названиях не найдено (No common words found in titles)")
+            st.write("No common words found across the video titles.")
             
         # Non-overlapping words in titles section
-        st.markdown('<div class="section-header">Уникальные слова в названиях (Non-overlapping Words in Titles)</div>', unsafe_allow_html=True)
+        st.markdown("##### Non-overlapping Words in Titles")
         if unique_title_words:
-            # Get top 20 unique words for display
-            top_unique_title_words = sorted(unique_title_words.items(), key=lambda x: x[0])[:20]
-            unique_title_list = []
-            for i, (word, _) in enumerate(top_unique_title_words, 1):
-                unique_title_list.append(f'<span class="unique-item">{word}</span>')
-            st.markdown(', '.join(unique_title_list), unsafe_allow_html=True)
-            if len(unique_title_words) > 20:
-                st.write(f"...и еще {len(unique_title_words) - 20} слов (...and {len(unique_title_words) - 20} more)")
+            # Create a dataframe for unique title words
+            unique_title_data = {
+                "Word": list(unique_title_words.keys()),
+                "Appears in": ["1 video" for _ in unique_title_words]
+            }
+            unique_title_df = pd.DataFrame(unique_title_data)
+            st.dataframe(unique_title_df, height=200)
         else:
-            st.write("Уникальных слов в названиях не найдено (No unique words found in titles)")
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.write("No non-overlapping words found in the video titles.")
         
         # Common tags section
-        st.markdown('<div class="analysis-container">', unsafe_allow_html=True)
-        st.markdown('<div class="section-header">Общие теги (Common Tags)</div>', unsafe_allow_html=True)
+        st.markdown("##### Common Tags")
         if common_tags:
-            # Create a formatted list of tags with their occurrence counts
-            tags_list = []
-            for i, (tag, count, total) in enumerate(common_tags, 1):
-                tags_list.append(f'<span class="common-item">{i}. {tag} (встречается в {count} из {total} видео)</span>')
-            st.markdown('<br>'.join(tags_list), unsafe_allow_html=True)
+            # Create a dataframe for common tags
+            tags_data = {
+                "Tag": [tag for tag, count, total in common_tags],
+                "Appears in": [f"{count} out of {total} videos" for tag, count, total in common_tags]
+            }
+            tags_df = pd.DataFrame(tags_data)
+            st.dataframe(tags_df, height=200)
         else:
-            st.write("Общих тегов не найдено (No common tags found)")
+            st.write("No common tags found across the videos.")
             
         # Non-overlapping tags section
-        st.markdown('<div class="section-header">Уникальные теги (Non-overlapping Tags)</div>', unsafe_allow_html=True)
+        st.markdown("##### Non-overlapping Tags")
         if unique_tags:
-            # Get top 20 unique tags for display
-            top_unique_tags = sorted(unique_tags.items(), key=lambda x: x[0])[:20]
-            unique_tags_list = []
-            for i, (tag, _) in enumerate(top_unique_tags, 1):
-                unique_tags_list.append(f'<span class="unique-item">{tag}</span>')
-            st.markdown(', '.join(unique_tags_list), unsafe_allow_html=True)
-            if len(unique_tags) > 20:
-                st.write(f"...и еще {len(unique_tags) - 20} тегов (...and {len(unique_tags) - 20} more)")
+            # Create a dataframe for unique tags
+            unique_tags_data = {
+                "Tag": list(unique_tags.keys()),
+                "Appears in": ["1 video" for _ in unique_tags]
+            }
+            unique_tags_df = pd.DataFrame(unique_tags_data)
+            st.dataframe(unique_tags_df, height=200)
         else:
-            st.write("Уникальных тегов не найдено (No unique tags found)")
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.write("No non-overlapping tags found across the videos.")
         
         # Common words in descriptions section
-        st.markdown('<div class="analysis-container">', unsafe_allow_html=True)
-        st.markdown('<div class="section-header">Общие слова в описаниях (Common Words in Descriptions)</div>', unsafe_allow_html=True)
+        st.markdown("##### Common Words in Descriptions")
         if common_words:
-            # Create a formatted list of words with their occurrence counts
-            words_list = []
-            for i, (word, count, total) in enumerate(common_words, 1):
-                words_list.append(f'<span class="common-item">{i}. {word} (встречается в {count} из {total} видео)</span>')
-            st.markdown('<br>'.join(words_list), unsafe_allow_html=True)
+            # Create a dataframe for common description words
+            words_data = {
+                "Word": [word for word, count, total in common_words],
+                "Appears in": [f"{count} out of {total} videos" for word, count, total in common_words]
+            }
+            words_df = pd.DataFrame(words_data)
+            st.dataframe(words_df, height=200)
         else:
-            st.write("Общих слов в описаниях не найдено (No common words found in descriptions)")
+            st.write("No common words found across the video descriptions.")
             
         # Non-overlapping words in descriptions section
-        st.markdown('<div class="section-header">Уникальные слова в описаниях (Non-overlapping Words in Descriptions)</div>', unsafe_allow_html=True)
+        st.markdown("##### Non-overlapping Words in Descriptions")
         if unique_desc_words:
-            # Get top 20 unique words for display
-            top_unique_desc_words = sorted(unique_desc_words.items(), key=lambda x: x[0])[:20]
-            unique_desc_list = []
-            for i, (word, _) in enumerate(top_unique_desc_words, 1):
-                unique_desc_list.append(f'<span class="unique-item">{word}</span>')
-            st.markdown(', '.join(unique_desc_list), unsafe_allow_html=True)
-            if len(unique_desc_words) > 20:
-                st.write(f"...и еще {len(unique_desc_words) - 20} слов (...and {len(unique_desc_words) - 20} more)")
+            # Create a dataframe for unique description words
+            unique_desc_data = {
+                "Word": list(unique_desc_words.keys()),
+                "Appears in": ["1 video" for _ in unique_desc_words]
+            }
+            unique_desc_df = pd.DataFrame(unique_desc_data)
+            st.dataframe(unique_desc_df, height=200)
         else:
-            st.write("Уникальных слов в описаниях не найдено (No unique words found in descriptions)")
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.write("No non-overlapping words found in the video descriptions.")
         
         # Add a clear divider between Analysis Results and Video Details
         st.divider()
