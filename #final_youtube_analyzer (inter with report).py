@@ -22,16 +22,16 @@ st.markdown("""
         font-weight: 500 !important;
     }
     
-    /* Set sidebar width to 250px (100px narrower than default) */
+    /* Set sidebar width to 350px */
     [data-testid="stSidebar"] {
         width: 350px !important;
         min-width: 350px !important;
         max-width: 350px !important;
     }
     
-    /* Adjust sidebar content to fit narrower sidebar */
+    /* Adjust sidebar content to fit sidebar */
     [data-testid="stSidebar"] > div:first-child {
-        width: 300px !important;
+        width: 350px !important;
         min-width: 350px !important;
     }
     
@@ -629,21 +629,20 @@ def main():
             # Views
             st.write(f"**Views:** {video['views']:,}")
             
-            # Tags with highlighting
-            if video['tags']:
-                st.write("**Tags:**")
-                
-                # Create HTML for tags with highlighting that preserves original case
-                tags_html = []
-                for tag in video['tags']:
-                    if tag.lower() in [t.lower() for t in common_tags_set]:
-                        tags_html.append(f'<span class="highlight">{tag}</span>')
-                    else:
-                        tags_html.append(tag)
-                
-                st.markdown(", ".join(tags_html), unsafe_allow_html=True)
-            else:
-                st.write("**Tags:** None")
+            # Tags with highlighting (collapsible)
+            with st.expander("Show Tags"):
+                if video['tags']:
+                    # Create HTML for tags with highlighting that preserves original case
+                    tags_html = []
+                    for tag in video['tags']:
+                        if tag.lower() in [t.lower() for t in common_tags_set]:
+                            tags_html.append(f'<span class="highlight">{tag}</span>')
+                        else:
+                            tags_html.append(tag)
+                    
+                    st.markdown(", ".join(tags_html), unsafe_allow_html=True)
+                else:
+                    st.write("None")
             
             # Description (collapsible) with highlighting
             with st.expander("Show Description"):
