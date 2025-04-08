@@ -191,7 +191,7 @@ def main():
             )
         if i == len(st.session_state.video_urls) - 1:
             with col2:
-                st.button("+", on_click=add_url_field)
+                st.button("➕ Add Video", on_click=add_url_field)
     
     # Analyze button
     analyze_clicked = st.button("Analyze Videos", type="primary")
@@ -282,40 +282,48 @@ def main():
         
         for i, video in enumerate(videos_data):
             with st.expander(f"{i+1}. {video['title']} ([Link](https://www.youtube.com/watch?v={video['id']}))"):
-                col1, col2 = st.columns([1, 2])
+                # Display thumbnail
+                st.image(video['thumbnail'], use_container_width=True)
                 
-                with col1:
-                    st.image(video['thumbnail'], use_container_width=True)
-                    st.write(f"**Views:** {video['view_count']:,}")
-                    st.write(f"**Published:** {format_datetime(video['published_at'])}")
+                # Display metadata
+                st.write(f"**Published:** {format_datetime(video['published_at'])}")
+                st.write(f"**Views:** {video['view_count']:,}")
                 
-                with col2:
-                    # Tags section with highlighted common tags
-                    st.write("**Tags:**")
+                # Create columns for the spoilers to avoid nesting expanders
+                tags_col, desc_col = st.columns(2)
+                
+                # Tags section with highlighted common tags
+                with tags_col:
+                    st.markdown("**Tags:**")
                     if video.get('tags'):
+                        tags_placeholder = st.empty()
                         show_tags = st.checkbox("Show tags", key=f"tags_{video['id']}")
                         if show_tags:
-                            render_highlighted_text(
-                                video['tags'],
-                                analysis_results['tag_analysis']['word_count'],
-                                video['id'],
-                                videos_data,
-                                is_tag=True
-                            )
+                            with tags_placeholder.container():
+                                render_highlighted_text(
+                                    video['tags'],
+                                    analysis_results['tag_analysis']['word_count'],
+                                    video['id'],
+                                    videos_data,
+                                    is_tag=True
+                                )
                     else:
                         st.write("No tags for this video.")
-                    
-                    # Description section with highlighted common words
-                    st.write("**Description:**")
+                
+                # Description section with highlighted common words
+                with desc_col:
+                    st.markdown("**Description:**")
                     if video.get('description'):
+                        desc_placeholder = st.empty()
                         show_desc = st.checkbox("Show description", key=f"desc_{video['id']}")
                         if show_desc:
-                            render_highlighted_description(
-                                video['description'],
-                                analysis_results['desc_analysis']['word_count'],
-                                video['id'],
-                                videos_data
-                            )
+                            with desc_placeholder.container():
+                                render_highlighted_description(
+                                    video['description'],
+                                    analysis_results['desc_analysis']['word_count'],
+                                    video['id'],
+                                    videos_data
+                                )
                     else:
                         st.write("No description for this video.")
 
@@ -365,7 +373,7 @@ def render_highlighted_text(tags, word_count, current_video_id, videos_data, is_
             # Display highlighted tag with tooltip
             if videos_with_tag:
                 st.markdown(
-                    f"<span style='background-color: #d4f1d4; padding: 2px 5px; border-radius: 3px;' "
+                    f"<span style='color: #006400; font-weight: bold;' "
                     f"title='Also in: {', '.join(videos_with_tag)}'>{tag}</span>",
                     unsafe_allow_html=True
                 )
@@ -410,7 +418,7 @@ def render_highlighted_description(description, word_count, current_video_id, vi
             pattern = rf'\b({re.escape(word)})\b'
             
             # Replace with highlighted version
-            replacement = f"<span style='background-color: #d4f1d4; padding: 0px 2px; border-radius: 3px;' title='Also in: {', '.join(videos)}'>\\1</span>"
+            replacement = f"<span style='color: #006400; font-weight: bold;' title='Also in: {', '.join(videos)}'>\\1</span>"
             html_paragraph = re.sub(pattern, replacement, html_paragraph, flags=re.IGNORECASE)
         
         # Display the processed paragraph
