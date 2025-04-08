@@ -12,6 +12,17 @@ st.set_page_config(
     page_icon="🎬",
     layout="wide"
 )
+
+# Apply minimal CSS just for highlighting matching words
+st.markdown("""
+<style>
+    /* Highlight matching elements with green text color */
+    .highlight {
+        color: #008000 !important;
+        font-weight: 500 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 # YouTube API Key - Replace with your actual API key
 YOUTUBE_API_KEY = "AIzaSyDCRnjNNuvzmp45rYZiGae7q6RggG4d3NI"
 
@@ -549,7 +560,14 @@ def main():
             st.write("---")
             
             # Video title
-            st.write(f"**Title:** {video['title']}")
+            title_html = video['title']
+            # Highlight common words in title while preserving original case
+            for word in common_title_words_set:
+                # Case-insensitive replacement with highlighting that preserves original case
+                pattern = re.compile(re.escape(word), re.IGNORECASE)
+                title_html = pattern.sub(lambda m: f'<span class="highlight">{m.group(0)}</span>', title_html)
+            
+            st.markdown(f"**Title:** {title_html}", unsafe_allow_html=True)
             
             # Display thumbnail with fixed width
             st.image(video['thumbnail'], width=426)
@@ -564,15 +582,28 @@ def main():
             if video['tags']:
                 st.write("**Tags:**")
                 
-                # Display tags without custom formatting
-                st.write(", ".join(video['tags']))
+                # Create HTML for tags with highlighting that preserves original case
+                tags_html = []
+                for tag in video['tags']:
+                    if tag.lower() in [t.lower() for t in common_tags_set]:
+                        tags_html.append(f'<span class="highlight">{tag}</span>')
+                    else:
+                        tags_html.append(tag)
+                
+                st.markdown(", ".join(tags_html), unsafe_allow_html=True)
             else:
                 st.write("**Tags:** None")
             
             # Description (collapsible) with highlighting
             with st.expander("Show Description"):
-                # Display description without custom formatting
-                st.write(video['description'])
+                # Highlight common words in description while preserving original case
+                desc_html = video['description']
+                for word in common_words_set:
+                    # Case-insensitive replacement with highlighting that preserves original case
+                    pattern = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)
+                    desc_html = pattern.sub(lambda m: f'<span class="highlight">{m.group(0)}</span>', desc_html)
+                
+                st.markdown(desc_html, unsafe_allow_html=True)
 
     # No need for closing div tag since we're not using a container div anymore
 
