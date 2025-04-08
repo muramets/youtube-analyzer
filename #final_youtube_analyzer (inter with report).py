@@ -16,35 +16,62 @@ st.set_page_config(
 # Apply more aggressive CSS to force fixed width and centered layout
 st.markdown("""
 <style>
-    /* Override Streamlit's default container */
+    /* Global settings to prevent horizontal scrollbar */
+    body {
+        overflow-x: hidden !important;
+    }
+    
+    /* Main container styling */
     .main .block-container {
         max-width: 1000px !important;
-        width: 1000px !important;
         padding-top: 2rem !important;
         padding-right: 2rem !important;
         padding-left: 2rem !important;
         padding-bottom: 2rem !important;
         margin: 0 auto !important;
+        overflow-x: hidden !important;
     }
     
-    /* Force the app container to be centered and fixed width - updated for Streamlit 1.44+ */
+    /* App container styling - updated for Streamlit 1.44+ */
+    div[data-testid="stAppViewContainer"] {
+        width: 100% !important;
+        overflow-x: hidden !important;
+    }
+    
+    /* Center content with fixed width */
     div[data-testid="stAppViewContainer"] > section,
     div[data-testid="stAppViewContainer"] > div,
     div[data-testid="stAppViewContainer"] > section > div,
-    div[data-testid="stAppViewContainer"] > section > div > div,
-    div[data-testid="stHorizontalBlock"],
-    div[data-testid="stVerticalBlock"] {
+    div[data-testid="stAppViewContainer"] > section > div > div {
         max-width: 1000px !important;
-        width: 1000px !important;
         margin-left: auto !important;
         margin-right: auto !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
+        overflow-x: hidden !important;
+    }
+    
+    /* Ensure horizontal blocks don't cause overflow */
+    div[data-testid="stHorizontalBlock"],
+    div[data-testid="stVerticalBlock"] {
+        width: 100% !important;
+        max-width: 1000px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        overflow-x: hidden !important;
     }
     
     /* Unified background color for the entire app */
     .stApp, .main .block-container {
         background-color: #121212 !important;
+    }
+    
+    /* Ensure vertical scrollbar appears at the edge of the screen */
+    .stApp {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
     }
     
     /* Image styling */
