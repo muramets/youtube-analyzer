@@ -23,12 +23,14 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-# YouTube API Key - Replace with your actual API key
-YOUTUBE_API_KEY = "AIzaSyDCRnjNNuvzmp45rYZiGae7q6RggG4d3NI"
-
 # Initialize YouTube API client
 def get_youtube_client():
-    return build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+    # Get API key from session state
+    api_key = st.session_state.get('youtube_api_key', '')
+    if not api_key:
+        st.error("Please enter your YouTube API Key in the sidebar.")
+        st.stop()
+    return build('youtube', 'v3', developerKey=api_key)
 
 # Extract video ID from YouTube URL
 def extract_video_id(url):
@@ -379,6 +381,36 @@ def generate_excel_file(videos_data, common_title_words, common_tags, common_wor
 def main():
     # Ensure NLTK resources are downloaded at startup
     download_nltk_resources()
+    
+    # Create sidebar for API key input
+    with st.sidebar:
+        st.title("Settings")
+        
+        # Initialize API key in session state if not exists
+        if 'youtube_api_key' not in st.session_state:
+            st.session_state.youtube_api_key = ""
+            
+        # API key input
+        api_key = st.text_input(
+            "YouTube API Key",
+            value=st.session_state.youtube_api_key,
+            type="password",
+            help="Enter your YouTube API Key. If you don't have one, you can get it from the Google Cloud Console."
+        )
+        
+        # Update session state when API key changes
+        if api_key != st.session_state.youtube_api_key:
+            st.session_state.youtube_api_key = api_key
+            
+        # Add instructions for getting an API key
+        with st.expander("How to get a YouTube API Key"):
+            st.markdown("""
+            1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+            2. Create a new project or select an existing one
+            3. Enable the YouTube Data API v3
+            4. Create credentials (API key)
+            5. Copy the API key and paste it above
+            """)
     
     # Display content directly without a separate container
     st.title("YouTube Video Analyzer")
