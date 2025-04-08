@@ -214,22 +214,30 @@ def main():
     for i, url in enumerate(st.session_state.video_urls):
         col1, col2 = st.columns([6, 1])
         with col1:
-            st.session_state.video_urls[i] = st.text_input(
+            # Store the current URL value before the text_input to check if it changed
+            old_url = url
+            
+            # Create the text input field for URL
+            new_url = st.text_input(
                 f"Video URL {i+1}", 
                 value=url,
                 key=f"url_{i}"
             )
+            
+            # Update the session state with the new URL value
+            st.session_state.video_urls[i] = new_url
+        
         if i == len(st.session_state.video_urls) - 1:
             with col2:
-                # Always trim whitespace before checking content
-                url_trimmed = url.strip()
+                # Always trim whitespace 
+                url_trimmed = new_url.strip() if new_url else ""
                 
-                # Show Add button by default for the first field or if field has content
-                # Show Delete button if it's not the first field and is empty
+                # Show Add button if first field OR if current field has content
+                # Show Delete button otherwise
                 if i == 0 or url_trimmed:
-                    st.button("➕ Add Video", key=f"add_{i}", on_click=add_url_field)
+                    st.button("➕ Add Video", key=f"add_video_{i}", on_click=add_url_field)
                 else:
-                    st.button("❌ Delete", key=f"delete_{i}", on_click=remove_url_field)
+                    st.button("❌ Delete", key=f"delete_video_{i}", on_click=remove_url_field)
     
     # Analyze button
     analyze_clicked = st.button("Analyze Videos", type="primary")
