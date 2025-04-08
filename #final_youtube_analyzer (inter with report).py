@@ -82,8 +82,22 @@ def tokenize_text(text):
     # Convert to lowercase
     text = text_without_urls.lower()
     
+    # Word normalization for hyphenated/non-hyphenated variants
+    word_variants = {
+        'lo-fi': 'lofi',
+        'lo fi': 'lofi',
+        'hip-hop': 'hiphop',
+        'hip hop': 'hiphop',
+        'r&b': 'rnb',
+        'r & b': 'rnb'
+    }
+    
+    # Apply word variant normalization
+    for variant, normalized in word_variants.items():
+        text = text.replace(variant, normalized)
+    
     # Common multi-word phrases to preserve as single tokens
-    multi_word_phrases = ["hip hop", "lofi beats", "chill mix", "study music", 
+    multi_word_phrases = ["hiphop", "lofi beats", "chill mix", "study music", 
                          "relaxing music", "sleep music", "ambient music", 
                          "background music", "piano music", "jazz music", 
                          "lofi chill", "chill out", "deep house"]
@@ -93,8 +107,16 @@ def tokenize_text(text):
         if phrase in text:
             text = text.replace(phrase, phrase.replace(' ', '_'))
     
-    # Find all words
-    words = re.findall(r'\b\w+\b', text)
+    # Find words including hyphenated terms
+    # This regex matches both regular words and hyphenated words
+    words = re.findall(r'\b[\w\-]+\b', text)
+    
+    # Normalize hyphenated words by removing hyphens
+    normalized_words = []
+    for word in words:
+        # Replace hyphens with empty string to normalize
+        normalized_word = word.replace('-', '')
+        normalized_words.append(normalized_word)
     
     # Common stop words to filter out
     stop_words = {
@@ -111,7 +133,7 @@ def tokenize_text(text):
     
     # Filter out stop words and short words
     filtered_words = [word.replace('_', ' ') if '_' in word else word 
-                     for word in words if word not in stop_words and len(word) > 2]
+                     for word in normalized_words if word not in stop_words and len(word) > 2]
     
     return filtered_words
 
