@@ -69,19 +69,18 @@ def get_video_details(api_key, video_ids):
 
 # Function to tokenize text and remove common stop words
 def tokenize_text(text):
-    # More comprehensive URL pattern to remove URLs and their components
+    # First, detect and completely remove URLs using comprehensive pattern
+    # This removes the entire URL without breaking it into separate words
     url_pattern = r'(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
     
-    # Remove all URLs completely
-    text = re.sub(url_pattern, '', text, flags=re.IGNORECASE)
+    # For storing all original URLs to make sure they're completely removed
+    urls_in_text = re.findall(url_pattern, text, flags=re.IGNORECASE)
     
-    # Remove common URL components that might be missed
-    url_parts = ['http', 'https', 'www', 'com', 'net', 'org', 'io', 'html', 'php', 
-                 'aspx', 'htm', 'spotify', 'youtube', 'youtu', 'soundcloud', 
-                 'bandcamp', 'apple', 'music', 'itunes', 'fm', 'listen', 'playlists']
+    # Remove all URLs completely
+    text_without_urls = re.sub(url_pattern, ' ', text, flags=re.IGNORECASE)
     
     # Convert to lowercase
-    text = text.lower()
+    text = text_without_urls.lower()
     
     # Common multi-word phrases to preserve as single tokens
     multi_word_phrases = ["hip hop", "lofi beats", "chill mix", "study music", 
@@ -109,9 +108,6 @@ def tokenize_text(text):
         'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'its', 'our', 'their',
         'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must'
     }
-    
-    # Add URL parts to stop words
-    stop_words.update(url_parts)
     
     # Filter out stop words and short words
     filtered_words = [word.replace('_', ' ') if '_' in word else word 
@@ -225,12 +221,15 @@ def main():
             )
         if i == len(st.session_state.video_urls) - 1:
             with col2:
+                # Always trim whitespace before checking content
+                url_trimmed = url.strip()
+                
                 # Show Add button by default for the first field or if field has content
                 # Show Delete button if it's not the first field and is empty
-                if i == 0 or url.strip():
-                    st.button("➕ Add Video", on_click=add_url_field)
+                if i == 0 or url_trimmed:
+                    st.button("➕ Add Video", key=f"add_{i}", on_click=add_url_field)
                 else:
-                    st.button("❌ Delete", on_click=remove_url_field)
+                    st.button("❌ Delete", key=f"delete_{i}", on_click=remove_url_field)
     
     # Analyze button
     analyze_clicked = st.button("Analyze Videos", type="primary")
