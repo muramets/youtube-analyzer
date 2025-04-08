@@ -22,24 +22,22 @@ st.markdown("""
         font-weight: 500 !important;
     }
     
-    /* Set sidebar width to 100px */
+    /* Set sidebar width to 250px (100px narrower than default) */
     [data-testid="stSidebar"] {
         width: 250px !important;
-        min-width: 200px !important;
+        min-width: 250px !important;
         max-width: 250px !important;
     }
     
     /* Adjust sidebar content to fit narrower sidebar */
     [data-testid="stSidebar"] > div:first-child {
-        width: 100px !important;
-        min-width: 100px !important;
+        width: 250px !important;
+        min-width: 250px !important;
     }
     
-    /* Make sure text wraps properly in the narrow sidebar */
+    /* Make sure text wraps properly in the sidebar */
     [data-testid="stSidebar"] .stMarkdown, 
-    [data-testid="stSidebar"] .stTextInput,
-    [data-testid="stSidebar"] h1 {
-        font-size: smaller !important;
+    [data-testid="stSidebar"] .stTextInput {
         word-wrap: break-word !important;
     }
 </style>
