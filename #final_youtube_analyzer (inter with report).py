@@ -27,8 +27,13 @@ st.markdown("""
         margin: 0 auto !important;
     }
     
-    /* Force the app container to be centered and fixed width */
-    .css-1d391kg, .css-1lcbmhc, .css-18e3th9, .css-1y4p8pa {
+    /* Force the app container to be centered and fixed width - updated for Streamlit 1.44+ */
+    div[data-testid="stAppViewContainer"] > section,
+    div[data-testid="stAppViewContainer"] > div,
+    div[data-testid="stAppViewContainer"] > section > div,
+    div[data-testid="stAppViewContainer"] > section > div > div,
+    div[data-testid="stHorizontalBlock"],
+    div[data-testid="stVerticalBlock"] {
         max-width: 1000px !important;
         width: 1000px !important;
         margin-left: auto !important;
@@ -494,12 +499,12 @@ def main():
             with col2:
                 if st.button("➖", key=f"remove_{i}"):
                     st.session_state.url_inputs.pop(i)
-                    st.experimental_rerun()
+                    st.rerun()
     
     # Add URL button
     if st.button("➕ Add Another URL"):
         add_url_input()
-        st.experimental_rerun()
+        st.rerun()
     
     # Analyze button
     if st.button("🔍 Analyze Videos"):
