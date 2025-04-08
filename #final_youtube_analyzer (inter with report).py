@@ -24,9 +24,9 @@ st.markdown("""
     
     /* Set sidebar width to 100px */
     [data-testid="stSidebar"] {
-        width: 100px !important;
-        min-width: 100px !important;
-        max-width: 100px !important;
+        width: 250px !important;
+        min-width: 200px !important;
+        max-width: 250px !important;
     }
     
     /* Adjust sidebar content to fit narrower sidebar */
