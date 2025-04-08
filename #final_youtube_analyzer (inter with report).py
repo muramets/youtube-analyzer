@@ -11,15 +11,49 @@ from googleapiclient.errors import HttpError
 st.set_page_config(
     page_title="YouTube Video Analyzer",
     page_icon="🎬",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"  # Force sidebar to be expanded by default
 )
 
 # Apply more aggressive CSS to force fixed width and centered layout
+# Make sure sidebar is visible
 st.markdown("""
 <style>
     /* Global settings to hide scrollbars while maintaining scroll functionality */
     body {
         overflow-x: hidden !important;
+    }
+    
+    /* Make sure sidebar is visible and styled properly */
+    [data-testid="stSidebar"] {
+        background-color: #1E1E1E !important;
+        border-right: 1px solid #333 !important;
+        padding: 1rem !important;
+        min-width: 300px !important;
+        width: 300px !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    /* Style sidebar header */
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3 {
+        color: #FFFFFF !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    /* Style sidebar text */
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #CCCCCC !important;
+    }
+    
+    /* Style sidebar input fields */
+    [data-testid="stSidebar"] input {
+        background-color: #2D2D2D !important;
+        color: #FFFFFF !important;
+        border: 1px solid #444 !important;
     }
     
     /* Hide scrollbar for Chrome, Safari and Opera */
@@ -501,19 +535,21 @@ def generate_excel_file(videos_data, common_title_words, common_tags, common_wor
 
 # Main application
 def main():
-    # Create sidebar for API key input
+    # Create sidebar for API key input with more prominent styling
     with st.sidebar:
-        st.header("YouTube API Configuration")
+        st.markdown("<h2 style='text-align: center; color: #4CAF50;'>API Configuration</h2>", unsafe_allow_html=True)
+        st.subheader("YouTube API Key Required")
         api_key = st.text_input(
             "Enter your YouTube API Key",
             type="password",
-            help="Get your API key from the Google Cloud Console"
+            help="Get your API key from the Google Cloud Console",
+            key="youtube_api_key"  # Add a unique key to ensure state is preserved
         )
         
         if api_key:
-            st.success("API key provided! You can now analyze videos.")
+            st.success("✅ API key provided! You can now analyze videos.")
         else:
-            st.warning("Please enter your YouTube API key to use this application.")
+            st.error("⚠️ API key is required to use this application!")
             st.markdown("""
             ### How to get a YouTube API Key:
             1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
@@ -534,11 +570,15 @@ def main():
     
     # Display content directly without a separate container
     st.title("YouTube Video Analyzer")
-    st.write("Enter YouTube video URLs to analyze common patterns and details.")
     
-    # Check if API key is provided
+    # More prominent warning if API key is missing
     if not api_key:
-        st.warning("Please enter your YouTube API key in the sidebar to use this application.")
+        st.error("⚠️ YouTube API Key Required!")
+        st.warning("Please enter your YouTube API key in the sidebar (left panel) to use this application.")
+        st.info("If you don't see the sidebar, click the '>' icon in the top-left corner to expand it.")
+        st.stop()  # Stop execution until API key is provided
+    
+    st.write("Enter YouTube video URLs to analyze common patterns and details.")
     
     # Initialize session state for storing analysis results
     if 'download_clicked' not in st.session_state:
