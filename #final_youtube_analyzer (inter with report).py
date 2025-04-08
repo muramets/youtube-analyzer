@@ -285,7 +285,7 @@ def main():
                 col1, col2 = st.columns([1, 2])
                 
                 with col1:
-                    st.image(video['thumbnail'], use_column_width=True)
+                    st.image(video['thumbnail'], use_container_width=True)
                     st.write(f"**Views:** {video['view_count']:,}")
                     st.write(f"**Published:** {format_datetime(video['published_at'])}")
                 
@@ -293,7 +293,8 @@ def main():
                     # Tags section with highlighted common tags
                     st.write("**Tags:**")
                     if video.get('tags'):
-                        with st.expander("Show tags"):
+                        show_tags = st.checkbox("Show tags", key=f"tags_{video['id']}")
+                        if show_tags:
                             render_highlighted_text(
                                 video['tags'],
                                 analysis_results['tag_analysis']['word_count'],
@@ -307,7 +308,8 @@ def main():
                     # Description section with highlighted common words
                     st.write("**Description:**")
                     if video.get('description'):
-                        with st.expander("Show description"):
+                        show_desc = st.checkbox("Show description", key=f"desc_{video['id']}")
+                        if show_desc:
                             render_highlighted_description(
                                 video['description'],
                                 analysis_results['desc_analysis']['word_count'],
