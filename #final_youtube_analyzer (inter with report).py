@@ -16,9 +16,22 @@ st.set_page_config(
 # Apply more aggressive CSS to force fixed width and centered layout
 st.markdown("""
 <style>
-    /* Global settings to prevent horizontal scrollbar */
+    /* Global settings to hide scrollbars while maintaining scroll functionality */
     body {
         overflow-x: hidden !important;
+    }
+    
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    ::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+    
+    /* Hide scrollbar for IE, Edge and Firefox */
+    html, body, div {
+        -ms-overflow-style: none !important;  /* IE and Edge */
+        scrollbar-width: none !important;     /* Firefox */
     }
     
     /* Main container styling */
@@ -68,10 +81,12 @@ st.markdown("""
         background-color: #121212 !important;
     }
     
-    /* Ensure vertical scrollbar appears at the edge of the screen */
+    /* Ensure scrolling still works but scrollbar is hidden */
     .stApp {
         overflow-y: auto !important;
         overflow-x: hidden !important;
+        -ms-overflow-style: none !important;  /* IE and Edge */
+        scrollbar-width: none !important;     /* Firefox */
     }
     
     /* Image styling */
