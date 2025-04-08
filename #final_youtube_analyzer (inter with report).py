@@ -13,13 +13,34 @@ st.set_page_config(
     layout="wide"
 )
 
-# Apply minimal CSS just for highlighting matching words
+# Apply CSS for highlighting and sidebar width
 st.markdown("""
 <style>
     /* Highlight matching elements with green text color */
     .highlight {
         color: #008000 !important;
         font-weight: 500 !important;
+    }
+    
+    /* Set sidebar width to 100px */
+    [data-testid="stSidebar"] {
+        width: 100px !important;
+        min-width: 100px !important;
+        max-width: 100px !important;
+    }
+    
+    /* Adjust sidebar content to fit narrower sidebar */
+    [data-testid="stSidebar"] > div:first-child {
+        width: 100px !important;
+        min-width: 100px !important;
+    }
+    
+    /* Make sure text wraps properly in the narrow sidebar */
+    [data-testid="stSidebar"] .stMarkdown, 
+    [data-testid="stSidebar"] .stTextInput,
+    [data-testid="stSidebar"] h1 {
+        font-size: smaller !important;
+        word-wrap: break-word !important;
     }
 </style>
 """, unsafe_allow_html=True)
