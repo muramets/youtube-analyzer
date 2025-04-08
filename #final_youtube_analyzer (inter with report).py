@@ -296,51 +296,7 @@ def main():
                 total_videos
             )
             if not title_df.empty:
-                st.markdown("This table shows words that appear in multiple videos:")
-                # Using st.dataframe for better user experience 
-                # but also displaying HTML table for clickable links
-                
-                # Add custom CSS to make the HTML table look like a Streamlit dataframe
-                st.markdown("""
-                <style>
-                .dataframe {
-                    border-collapse: collapse;
-                    margin: 10px 0;
-                    font-size: 14px;
-                    width: 100%;
-                    max-height: 300px;
-                    overflow-y: auto;
-                    display: block;
-                }
-                .dataframe th {
-                    background-color: #f8f9fa;
-                    color: #404040;
-                    font-weight: 500;
-                    text-align: left;
-                    padding: 8px;
-                    border-bottom: 1px solid #e6e6e6;
-                }
-                .dataframe td {
-                    text-align: left;
-                    padding: 8px;
-                    border-bottom: 1px solid #e6e6e6;
-                }
-                .dataframe tr:hover {
-                    background-color: #f1f1f1;
-                }
-                </style>
-                """, unsafe_allow_html=True)
-                
-                # Convert dataframe to HTML with clickable links
-                html = title_df.to_html(escape=False, index=True, classes="dataframe")
-                st.markdown(f'<div style="height:300px; overflow:auto;">{html}</div>', unsafe_allow_html=True)
-                
-                # Also show the dataframe for search functionality, but hide the Videos column
-                with st.expander("Show searchable table (non-clickable)"):
-                    search_df = title_df.copy()
-                    # Replace HTML with plain text for the search table
-                    search_df['Videos'] = search_df['Videos'].apply(lambda x: x.replace('<a href', '').replace('</a>', ''))
-                    st.dataframe(search_df, height=300)
+                st.dataframe(title_df, height=300)
             else:
                 st.info("No common words found in titles.")
         
@@ -351,17 +307,7 @@ def main():
                 total_videos
             )
             if not tag_df.empty:
-                st.markdown("This table shows tags that appear in multiple videos:")
-                # Convert dataframe to HTML with clickable links
-                html = tag_df.to_html(escape=False, index=True, classes="dataframe")
-                st.markdown(f'<div style="height:300px; overflow:auto;">{html}</div>', unsafe_allow_html=True)
-                
-                # Also show the dataframe for search functionality
-                with st.expander("Show searchable table (non-clickable)"):
-                    search_df = tag_df.copy()
-                    # Replace HTML with plain text for the search table
-                    search_df['Videos'] = search_df['Videos'].apply(lambda x: x.replace('<a href', '').replace('</a>', ''))
-                    st.dataframe(search_df, height=300)
+                st.dataframe(tag_df, height=300)
             else:
                 st.info("No common tags found.")
         
@@ -372,17 +318,7 @@ def main():
                 total_videos
             )
             if not desc_df.empty:
-                st.markdown("This table shows words from descriptions that appear in multiple videos:")
-                # Convert dataframe to HTML with clickable links
-                html = desc_df.to_html(escape=False, index=True, classes="dataframe")
-                st.markdown(f'<div style="height:300px; overflow:auto;">{html}</div>', unsafe_allow_html=True)
-                
-                # Also show the dataframe for search functionality
-                with st.expander("Show searchable table (non-clickable)"):
-                    search_df = desc_df.copy()
-                    # Replace HTML with plain text for the search table
-                    search_df['Videos'] = search_df['Videos'].apply(lambda x: x.replace('<a href', '').replace('</a>', ''))
-                    st.dataframe(search_df, height=300)
+                st.dataframe(desc_df, height=300)
             else:
                 st.info("No common words found in descriptions.")
         
@@ -470,26 +406,21 @@ def create_word_frequency_df(word_count, total_videos):
     data = []
     for word, (count, video_ids) in word_count.items():
         if count > 1:  # Only include words that appear in more than one video
-            # Create list of clickable video links in "N video" format
-            video_links = []
-            video_counter = 1
-            
+            # Create list of video URLs
+            video_urls = []
             for video_id in video_ids:
                 for video in videos_data:
                     if video['id'] == video_id:
-                        url = f"https://www.youtube.com/watch?v={video['id']}"
-                        # Format as "N video" with clickable link and better styling
-                        video_links.append(f'<a href="{url}" target="_blank" style="color: #1a73e8; text-decoration: underline; font-weight: bold;">{video_counter} video</a>')
-                        video_counter += 1
+                        video_urls.append(f"https://www.youtube.com/watch?v={video['id']}")
                         break
             
             # Join with commas
-            videos_html = ", ".join(video_links)
+            videos_text = ", ".join(video_urls)
             
             data.append({
                 'Word': word,
                 'Frequency': f"{count} out of {total_videos}",
-                'Videos': videos_html,
+                'Videos': videos_text,
                 'Count': count  # For sorting
             })
     
