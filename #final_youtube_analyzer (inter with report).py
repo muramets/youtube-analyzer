@@ -24,15 +24,15 @@ st.markdown("""
     
     /* Set sidebar width to 250px (100px narrower than default) */
     [data-testid="stSidebar"] {
-        width: 250px !important;
-        min-width: 250px !important;
-        max-width: 250px !important;
+        width: 300px !important;
+        min-width: 300px !important;
+        max-width: 300px !important;
     }
     
     /* Adjust sidebar content to fit narrower sidebar */
     [data-testid="stSidebar"] > div:first-child {
-        width: 250px !important;
-        min-width: 250px !important;
+        width: 300px !important;
+        min-width: 300px !important;
     }
     
     /* Make sure text wraps properly in the sidebar */
