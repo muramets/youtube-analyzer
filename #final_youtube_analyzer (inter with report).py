@@ -5,149 +5,19 @@ from collections import Counter
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from googleapiclient.errors import HttpError
 
 # Set page title and configuration
 st.set_page_config(
     page_title="YouTube Video Analyzer",
     page_icon="🎬",
-    layout="wide",
-    initial_sidebar_state="expanded"  # Force sidebar to be expanded by default
+    layout="wide"
 )
+# YouTube API Key - Replace with your actual API key
+YOUTUBE_API_KEY = "AIzaSyDCRnjNNuvzmp45rYZiGae7q6RggG4d3NI"
 
-# Apply more aggressive CSS to fix layout issues and prevent sidebar overlap
-st.markdown("""
-<style>
-    /* More aggressive reset for all elements */
-    * {
-        box-sizing: border-box !important;
-    }
-    
-    /* Fix sidebar positioning with stronger selectors */
-    section[data-testid="stSidebar"],
-    .css-1d391kg,
-    .css-1oe6wy4 {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
-        bottom: 0 !important;
-        width: 220px !important;
-        max-width: 220px !important;
-        background-color: #1E1E1E !important;
-        border-right: 1px solid #333 !important;
-        overflow-y: auto !important;
-        z-index: 999 !important;
-    }
-    
-    /* Style sidebar header */
-    section[data-testid="stSidebar"] h1, 
-    section[data-testid="stSidebar"] h2, 
-    section[data-testid="stSidebar"] h3 {
-        color: #FFFFFF !important;
-    }
-    
-    /* Force main content to respect sidebar width */
-    .main .block-container,
-    [data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]) .block-container,
-    .css-18e3th9 .css-1d391kg,
-    .css-18e3th9 .css-1oe6wy4 {
-        width: calc(100% - 220px) !important;
-        margin-left: 220px !important;
-        max-width: none !important;
-        padding: 2rem !important;
-    }
-    
-    /* Fix app container */
-    div[data-testid="stAppViewContainer"],
-    .css-18e3th9 {
-        width: 100% !important;
-        padding: 0 !important;
-    }
-    
-    /* Fix main content section */
-    div[data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]),
-    .css-18e3th9 > section:not([data-testid="stSidebar"]) {
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    
-    /* Fix sidebar toggle button */
-    button[kind="header"],
-    .css-fblp2m,
-    .css-1rs6os {
-        position: fixed !important;
-        left: 220px !important;
-        top: 0.5rem !important;
-        z-index: 1000 !important;
-    }
-    
-    /* When sidebar is collapsed, adjust main content */
-    [data-testid="collapsedControl"] ~ section:not([data-testid="stSidebar"]) .block-container,
-    .css-1y4p8pa ~ section:not([data-testid="stSidebar"]) .block-container,
-    .css-1y4p8pa ~ .css-18e3th9 .css-1d391kg {
-        margin-left: 0 !important;
-        width: 100% !important;
-    }
-    
-    /* Hide sidebar completely when collapsed */
-    [data-testid="collapsedControl"] ~ section[data-testid="stSidebar"],
-    .css-1y4p8pa ~ section[data-testid="stSidebar"],
-    .css-1y4p8pa ~ .css-1d391kg {
-        width: 0 !important;
-        opacity: 0 !important;
-    }
-    
-    /* Unified background color */
-    .stApp, .main .block-container {
-        background-color: #121212 !important;
-    }
-    
-    /* Basic styling for other elements */
-    h1 { text-align: center !important; }
-    .highlight { color: #008000 !important; font-weight: 500 !important; }
-    
-    /* Add custom script to fix toggle button behavior */
-    </style>
-<script>
-    // Function to observe DOM changes and fix toggle button
-    const observer = new MutationObserver(function(mutations) {
-        // Find the toggle button
-        const toggleButton = document.querySelector('button[kind="header"], .css-fblp2m, .css-1rs6os');
-        if (toggleButton) {
-            // Check if sidebar is collapsed
-            const sidebarCollapsed = document.querySelector('[data-testid="collapsedControl"], .css-1y4p8pa');
-            if (sidebarCollapsed) {
-                // Sidebar is collapsed, adjust button position
-                toggleButton.style.left = '0px';
-            } else {
-                // Sidebar is expanded, adjust button position
-                toggleButton.style.left = '220px';
-            }
-        }
-    });
-    
-    // Start observing the document
-    observer.observe(document, { childList: true, subtree: true });
-</script>
-<style>
-</style>
-""", unsafe_allow_html=True)
 # Initialize YouTube API client
-def get_youtube_client(api_key):
-    """Create a YouTube API client with the provided API key."""
-    if not api_key or api_key.strip() == "":
-        return None
-    return build('youtube', 'v3', developerKey=api_key)
-
-# Disable automatic rerunning
-st.cache_data(ttl=None)
-def get_session_state():
-    """Get session state to prevent auto-refresh."""
-    return {}
-
-# Initialize session state
-get_session_state()
+def get_youtube_client():
+    return build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 
 # Extract video ID from YouTube URL
 def extract_video_id(url):
@@ -166,12 +36,9 @@ def extract_video_id(url):
     return None
 
 # Fetch video details from YouTube API
-def get_video_details(youtube, video_id):
-    if not youtube:
-        st.error("YouTube API client not initialized. Please enter a valid API key in the sidebar.")
-        return None
-        
+def get_video_details(video_id):
     try:
+        youtube = get_youtube_client()
         
         # Get video details
         video_response = youtube.videos().list(
@@ -499,47 +366,11 @@ def generate_excel_file(videos_data, common_title_words, common_tags, common_wor
 
 # Main application
 def main():
-    # Create sidebar for API key input
-    with st.sidebar:
-        st.header("API Configuration")
-        st.subheader("YouTube API Key Required")
-        api_key = st.text_input(
-            "Enter your YouTube API Key",
-            type="password",
-            help="Get your API key from the Google Cloud Console",
-            key="youtube_api_key"
-        )
-        
-        if api_key:
-            st.success("API key provided! You can now analyze videos.")
-        else:
-            st.warning("API key is required to use this application!")
-            st.markdown("""
-            ### How to get a YouTube API Key:
-            1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
-            2. Create a new project or select an existing one
-            3. Enable the YouTube Data API v3
-            4. Create an API key
-            5. Enter the key in the field above
-            """)
-        
-        # Note about API usage removed as requested
-    
-    # Initialize YouTube client with the provided API key
-    youtube = get_youtube_client(api_key)
-    
     # Ensure NLTK resources are downloaded at startup
     download_nltk_resources()
     
     # Display content directly without a separate container
     st.title("YouTube Video Analyzer")
-    
-    # Warning if API key is missing
-    if not api_key:
-        st.warning("Please enter your YouTube API key in the sidebar to use this application.")
-        st.info("If you don't see the sidebar, click the '>' icon in the top-left corner to expand it.")
-        st.stop()  # Stop execution until API key is provided
-    
     st.write("Enter YouTube video URLs to analyze common patterns and details.")
     
     # Initialize session state for storing analysis results
@@ -599,23 +430,6 @@ def main():
     
     # Analyze button
     if st.button("🔍 Analyze Videos"):
-        # Check if API key is provided
-        if not api_key:
-            st.error("Please enter your YouTube API key in the sidebar before analyzing videos.")
-            return
-            
-        # Test the API key with a simple request
-        try:
-            with st.spinner("Validating API key..."):
-                test_response = youtube.channels().list(
-                    part="snippet",
-                    id="UC_x5XG1OV2P6uZZ5FSM9Ttw"  # Google Developers channel
-                ).execute()
-        except HttpError as e:
-            if "API key not valid" in str(e):
-                st.error("The API key you entered is not valid. Please check and try again.")
-                return
-            # Other errors are ok - might be quota or permission issues that won't affect basic functionality
         # Reset analysis state when new analysis is requested
         st.session_state.analysis_complete = False
         st.session_state.download_clicked = False
@@ -638,7 +452,7 @@ def main():
                     invalid_urls.append(url)
                     continue
                 
-                video_info = get_video_details(youtube, video_id)
+                video_info = get_video_details(video_id)
                 if video_info:
                     videos_data.append(video_info)
             
@@ -701,7 +515,7 @@ def main():
             st.write("No common words found across the video descriptions.")
         
         # Add a clear divider between Analysis Results and Video Details
-        st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
+        st.divider()
         
         # Individual video details
         st.subheader("Video Details")
@@ -735,14 +549,7 @@ def main():
             st.write("---")
             
             # Video title
-            title_html = video['title']
-            # Highlight common words in title while preserving original case
-            for word in common_title_words_set:
-                # Case-insensitive replacement with highlighting that preserves original case
-                pattern = re.compile(re.escape(word), re.IGNORECASE)
-                title_html = pattern.sub(lambda m: f'<span class="highlight">{m.group(0)}</span>', title_html)
-            
-            st.markdown(f"**Title:** {title_html}", unsafe_allow_html=True)
+            st.write(f"**Title:** {video['title']}")
             
             # Display thumbnail with fixed width
             st.image(video['thumbnail'], width=426)
@@ -757,28 +564,15 @@ def main():
             if video['tags']:
                 st.write("**Tags:**")
                 
-                # Create HTML for tags with highlighting that preserves original case
-                tags_html = []
-                for tag in video['tags']:
-                    if tag.lower() in [t.lower() for t in common_tags_set]:
-                        tags_html.append(f'<span class="highlight">{tag}</span>')
-                    else:
-                        tags_html.append(tag)
-                
-                st.markdown(", ".join(tags_html), unsafe_allow_html=True)
+                # Display tags without custom formatting
+                st.write(", ".join(video['tags']))
             else:
                 st.write("**Tags:** None")
             
             # Description (collapsible) with highlighting
             with st.expander("Show Description"):
-                # Highlight common words in description while preserving original case
-                desc_html = video['description']
-                for word in common_words_set:
-                    # Case-insensitive replacement with highlighting that preserves original case
-                    pattern = re.compile(r'\b' + re.escape(word) + r'\b', re.IGNORECASE)
-                    desc_html = pattern.sub(lambda m: f'<span class="highlight">{m.group(0)}</span>', desc_html)
-                
-                st.markdown(desc_html, unsafe_allow_html=True)
+                # Display description without custom formatting
+                st.write(video['description'])
 
     # No need for closing div tag since we're not using a container div anymore
 
