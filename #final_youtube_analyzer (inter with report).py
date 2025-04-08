@@ -15,18 +15,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Force sidebar to be expanded by default
 )
 
-# Apply minimal CSS to fix layout issues
+# Apply CSS to fix layout issues and prevent sidebar overlap
 st.markdown("""
 <style>
     /* Fix sidebar positioning */
     section[data-testid="stSidebar"] {
-        position: absolute !important;
+        position: fixed !important;
         left: 0 !important;
         top: 0 !important;
         z-index: 999 !important;
         height: 100% !important;
         background-color: #1E1E1E !important;
         border-right: 1px solid #333 !important;
+        width: 250px !important;
     }
     
     /* Style sidebar header */
@@ -36,36 +37,36 @@ st.markdown("""
         color: #FFFFFF !important;
     }
     
-    /* Remove fixed width from main container */
+    /* Add margin to main content to prevent sidebar overlap */
     .main .block-container {
         max-width: none !important;
         padding: 2rem !important;
-        width: 100% !important;
+        width: calc(100% - 250px) !important;
+        margin-left: 250px !important;
         box-sizing: border-box !important;
     }
     
     /* Fix app container */
     div[data-testid="stAppViewContainer"] {
         width: 100% !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
     }
     
-    /* Remove margins from main content */
+    /* Fix main content section */
     div[data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]) {
         width: 100% !important;
-        margin-left: 0 !important;
         margin-right: 0 !important;
-        padding-left: 0 !important;
         padding-right: 0 !important;
     }
     
-    /* Make sure sidebar is visible on small screens */
-    @media (max-width: 992px) {
-        section[data-testid="stSidebar"] {
-            position: fixed !important;
-            width: 250px !important;
-        }
+    /* Fix sidebar toggle button to reflect state */
+    button[kind="header"] {
+        left: 250px !important;
+    }
+    
+    /* When sidebar is collapsed, adjust main content */
+    [data-testid="collapsedControl"] ~ section:not([data-testid="stSidebar"]) .block-container {
+        margin-left: 0 !important;
+        width: 100% !important;
     }
     
     /* Unified background color */
@@ -468,8 +469,7 @@ def main():
             5. Enter the key in the field above
             """)
         
-        # Add a note about API usage
-        st.info("Note: This application makes API calls only when you analyze videos, not automatically.")
+        # Note about API usage removed as requested
     
     # Initialize YouTube client with the provided API key
     youtube = get_youtube_client(api_key)
