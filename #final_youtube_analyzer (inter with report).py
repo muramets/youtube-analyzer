@@ -69,23 +69,32 @@ def get_video_details(api_key, video_ids):
 
 # Function to tokenize text and remove common stop words
 def tokenize_text(text):
-    # First, remove URLs completely using regex
-    text = re.sub(r'https?://\S+|www\.\S+', '', text)
+    # More comprehensive URL pattern to remove URLs and their components
+    url_pattern = r'(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
+    
+    # Remove all URLs completely
+    text = re.sub(url_pattern, '', text, flags=re.IGNORECASE)
+    
+    # Remove common URL components that might be missed
+    url_parts = ['http', 'https', 'www', 'com', 'net', 'org', 'io', 'html', 'php', 
+                 'aspx', 'htm', 'spotify', 'youtube', 'youtu', 'soundcloud', 
+                 'bandcamp', 'apple', 'music', 'itunes', 'fm', 'listen', 'playlists']
     
     # Convert to lowercase
     text = text.lower()
     
     # Common multi-word phrases to preserve as single tokens
-    multi_word_phrases = ["hip hop", "lofi beats", "chill mix", "study music", "relaxing music", 
-                         "sleep music", "ambient music", "background music", "piano music",
-                         "jazz music", "lofi chill", "chill out", "deep house"]
+    multi_word_phrases = ["hip hop", "lofi beats", "chill mix", "study music", 
+                         "relaxing music", "sleep music", "ambient music", 
+                         "background music", "piano music", "jazz music", 
+                         "lofi chill", "chill out", "deep house"]
     
     # Replace spaces in multi-word phrases with underscores
     for phrase in multi_word_phrases:
         if phrase in text:
             text = text.replace(phrase, phrase.replace(' ', '_'))
     
-    # Now find all words
+    # Find all words
     words = re.findall(r'\b\w+\b', text)
     
     # Common stop words to filter out
@@ -100,6 +109,9 @@ def tokenize_text(text):
         'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'its', 'our', 'their',
         'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must'
     }
+    
+    # Add URL parts to stop words
+    stop_words.update(url_parts)
     
     # Filter out stop words and short words
     filtered_words = [word.replace('_', ' ') if '_' in word else word 
@@ -387,14 +399,16 @@ def create_word_frequency_df(word_count, total_videos):
     data = []
     for word, (count, video_ids) in word_count.items():
         if count > 1:  # Only include words that appear in more than one video
-            # Create simple list of video numbers
-            video_numbers = []
-            for i, video in enumerate(videos_data):
-                if video['id'] in video_ids:
-                    video_numbers.append(f"Video {i+1}")
+            # Create list of video URLs
+            video_urls = []
+            for video_id in video_ids:
+                for video in videos_data:
+                    if video['id'] == video_id:
+                        video_urls.append(f"https://www.youtube.com/watch?v={video['id']}")
+                        break
             
             # Join with commas
-            videos_text = ", ".join(video_numbers)
+            videos_text = ", ".join(video_urls)
             
             data.append({
                 'Word': word,
