@@ -296,7 +296,8 @@ def main():
                 total_videos
             )
             if not title_df.empty:
-                st.dataframe(title_df, height=300)
+                st.markdown("This table shows words that appear in multiple videos:")
+                st.dataframe(title_df, height=300, unsafe_allow_html=True)
             else:
                 st.info("No common words found in titles.")
         
@@ -307,7 +308,8 @@ def main():
                 total_videos
             )
             if not tag_df.empty:
-                st.dataframe(tag_df, height=300)
+                st.markdown("This table shows tags that appear in multiple videos:")
+                st.dataframe(tag_df, height=300, unsafe_allow_html=True)
             else:
                 st.info("No common tags found.")
         
@@ -318,7 +320,8 @@ def main():
                 total_videos
             )
             if not desc_df.empty:
-                st.dataframe(desc_df, height=300)
+                st.markdown("This table shows words from descriptions that appear in multiple videos:")
+                st.dataframe(desc_df, height=300, unsafe_allow_html=True)
             else:
                 st.info("No common words found in descriptions.")
         
@@ -406,21 +409,26 @@ def create_word_frequency_df(word_count, total_videos):
     data = []
     for word, (count, video_ids) in word_count.items():
         if count > 1:  # Only include words that appear in more than one video
-            # Create list of video URLs
-            video_urls = []
+            # Create list of clickable video links in "N video" format
+            video_links = []
+            video_counter = 1
+            
             for video_id in video_ids:
                 for video in videos_data:
                     if video['id'] == video_id:
-                        video_urls.append(f"https://www.youtube.com/watch?v={video['id']}")
+                        url = f"https://www.youtube.com/watch?v={video['id']}"
+                        # Format as "N video" with clickable link
+                        video_links.append(f'<a href="{url}" target="_blank">{video_counter} video</a>')
+                        video_counter += 1
                         break
             
             # Join with commas
-            videos_text = ", ".join(video_urls)
+            videos_html = ", ".join(video_links)
             
             data.append({
                 'Word': word,
                 'Frequency': f"{count} out of {total_videos}",
-                'Videos': videos_text,
+                'Videos': videos_html,
                 'Count': count  # For sorting
             })
     
