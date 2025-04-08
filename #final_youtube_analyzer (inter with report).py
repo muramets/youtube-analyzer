@@ -281,51 +281,69 @@ def main():
         st.subheader("📽️ Individual Video Details")
         
         for i, video in enumerate(videos_data):
-            with st.expander(f"{i+1}. {video['title']} ([Link](https://www.youtube.com/watch?v={video['id']}))"):
-                # Display thumbnail
-                st.image(video['thumbnail'], use_container_width=True)
+            # Create a container for each video
+            video_container = st.container()
+            
+            with video_container:
+                # Display title with link
+                st.markdown(f"### {i+1}. {video['title']} ([Link](https://www.youtube.com/watch?v={video['id']}))")
+                
+                # Create columns for thumbnail and metadata
+                thumb_col, meta_col = st.columns([1, 3])
+                
+                # Display thumbnail with fixed width
+                with thumb_col:
+                    st.image(video['thumbnail'], width=240)
                 
                 # Display metadata
-                st.write(f"**Published:** {format_datetime(video['published_at'])}")
-                st.write(f"**Views:** {video['view_count']:,}")
+                with meta_col:
+                    st.write(f"**Published:** {format_datetime(video['published_at'])}")
+                    st.write(f"**Views:** {video['view_count']:,}")
                 
-                # Create columns for the spoilers to avoid nesting expanders
-                tags_col, desc_col = st.columns(2)
+                # Tags expander (YouTube-style)
+                if video.get('tags'):
+                    with st.expander("Tags"):
+                        # Create a horizontal layout for tags
+                        tag_html = '<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">'
+                        
+                        for tag in video.get('tags', []):
+                            tag_lower = tag.lower()
+                            videos_with_tag = []
+                            
+                            # Check if this tag is in other videos
+                            if tag_lower in analysis_results['tag_analysis']['word_count'] and len(analysis_results['tag_analysis']['word_count'][tag_lower][1]) > 1:
+                                video_ids = analysis_results['tag_analysis']['word_count'][tag_lower][1]
+                                
+                                # Create list of videos with this tag (excluding current)
+                                for video_id in video_ids:
+                                    if video_id != video['id']:
+                                        video_idx = next((idx for idx, v in enumerate(videos_data) if v['id'] == video_id), None)
+                                        if video_idx is not None:
+                                            videos_with_tag.append(f"Video {video_idx+1}")
+                                
+                                # YouTube-style tag with common word highlighting
+                                if videos_with_tag:
+                                    tag_html += f'<span style="background-color: #e9e9e9; color: #006400; font-weight: bold; padding: 4px 8px; border-radius: 16px; font-size: 14px;" title="Also in: {", ".join(videos_with_tag)}">{tag}</span>'
+                                else:
+                                    tag_html += f'<span style="background-color: #e9e9e9; padding: 4px 8px; border-radius: 16px; font-size: 14px;">{tag}</span>'
+                            else:
+                                tag_html += f'<span style="background-color: #e9e9e9; padding: 4px 8px; border-radius: 16px; font-size: 14px;">{tag}</span>'
+                        
+                        tag_html += '</div>'
+                        st.markdown(tag_html, unsafe_allow_html=True)
                 
-                # Tags section with highlighted common tags
-                with tags_col:
-                    st.markdown("**Tags:**")
-                    if video.get('tags'):
-                        tags_placeholder = st.empty()
-                        show_tags = st.checkbox("Show tags", key=f"tags_{video['id']}")
-                        if show_tags:
-                            with tags_placeholder.container():
-                                render_highlighted_text(
-                                    video['tags'],
-                                    analysis_results['tag_analysis']['word_count'],
-                                    video['id'],
-                                    videos_data,
-                                    is_tag=True
-                                )
-                    else:
-                        st.write("No tags for this video.")
+                # Description expander (YouTube-style)
+                if video.get('description'):
+                    with st.expander("Description"):
+                        render_highlighted_description(
+                            video['description'],
+                            analysis_results['desc_analysis']['word_count'],
+                            video['id'],
+                            videos_data
+                        )
                 
-                # Description section with highlighted common words
-                with desc_col:
-                    st.markdown("**Description:**")
-                    if video.get('description'):
-                        desc_placeholder = st.empty()
-                        show_desc = st.checkbox("Show description", key=f"desc_{video['id']}")
-                        if show_desc:
-                            with desc_placeholder.container():
-                                render_highlighted_description(
-                                    video['description'],
-                                    analysis_results['desc_analysis']['word_count'],
-                                    video['id'],
-                                    videos_data
-                                )
-                    else:
-                        st.write("No description for this video.")
+                # Add separator between videos
+                st.markdown("---")
 
 # Create a DataFrame for word frequencies
 def create_word_frequency_df(word_count, total_videos):
