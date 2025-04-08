@@ -591,74 +591,115 @@ def main():
         words_percentage = st.session_state.words_percentage
         unique_desc_words = st.session_state.unique_desc_words
         
-        # Display results
-        st.subheader("Analysis Results")
+        # Display results with enhanced visual presentation
+        st.subheader("НОВЫЙ АНАЛИЗ РЕЗУЛЬТАТОВ (NEW ANALYSIS RESULTS)")
+        
+        # Create a container with a colored background for the analysis results
+        st.markdown("""
+        <style>
+        .analysis-container {
+            background-color: #f0f8ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .section-header {
+            color: #0066cc;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .common-item {
+            color: #008000;
+            font-weight: 500;
+        }
+        .unique-item {
+            color: #800080;
+            font-weight: 500;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         
         # Common words in titles section
-        st.markdown(f"##### Common Words in Titles ({title_words_percentage:.0f}%)")
+        st.markdown('<div class="analysis-container">', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Общие слова в названиях (Common Words in Titles)</div>', unsafe_allow_html=True)
         if common_title_words:
             # Create a formatted list of words with their occurrence counts
-            title_words_list = [f"{word} (appears in {count} out of {total} videos)" 
-                              for word, count, total in common_title_words]
-            st.write(", ".join(title_words_list))
+            title_words_list = []
+            for i, (word, count, total) in enumerate(common_title_words, 1):
+                title_words_list.append(f'<span class="common-item">{i}. {word} (встречается в {count} из {total} видео)</span>')
+            st.markdown('<br>'.join(title_words_list), unsafe_allow_html=True)
         else:
-            st.write("No common words found across the video titles.")
+            st.write("Общих слов в названиях не найдено (No common words found in titles)")
             
         # Non-overlapping words in titles section
-        st.markdown("##### Non-overlapping Words in Titles")
+        st.markdown('<div class="section-header">Уникальные слова в названиях (Non-overlapping Words in Titles)</div>', unsafe_allow_html=True)
         if unique_title_words:
             # Get top 20 unique words for display
             top_unique_title_words = sorted(unique_title_words.items(), key=lambda x: x[0])[:20]
-            unique_title_list = [f"{word}" for word, _ in top_unique_title_words]
-            st.write(", ".join(unique_title_list))
+            unique_title_list = []
+            for i, (word, _) in enumerate(top_unique_title_words, 1):
+                unique_title_list.append(f'<span class="unique-item">{word}</span>')
+            st.markdown(', '.join(unique_title_list), unsafe_allow_html=True)
             if len(unique_title_words) > 20:
-                st.write(f"...and {len(unique_title_words) - 20} more")
+                st.write(f"...и еще {len(unique_title_words) - 20} слов (...and {len(unique_title_words) - 20} more)")
         else:
-            st.write("No non-overlapping words found in the video titles.")
+            st.write("Уникальных слов в названиях не найдено (No unique words found in titles)")
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # Common tags section
-        st.markdown(f"##### Common Tags ({tags_percentage:.0f}%)")
+        st.markdown('<div class="analysis-container">', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Общие теги (Common Tags)</div>', unsafe_allow_html=True)
         if common_tags:
             # Create a formatted list of tags with their occurrence counts
-            tags_list = [f"{tag} (appears in {count} out of {total} videos)" 
-                       for tag, count, total in common_tags]
-            st.write(", ".join(tags_list))
+            tags_list = []
+            for i, (tag, count, total) in enumerate(common_tags, 1):
+                tags_list.append(f'<span class="common-item">{i}. {tag} (встречается в {count} из {total} видео)</span>')
+            st.markdown('<br>'.join(tags_list), unsafe_allow_html=True)
         else:
-            st.write("No common tags found across the videos.")
+            st.write("Общих тегов не найдено (No common tags found)")
             
         # Non-overlapping tags section
-        st.markdown("##### Non-overlapping Tags")
+        st.markdown('<div class="section-header">Уникальные теги (Non-overlapping Tags)</div>', unsafe_allow_html=True)
         if unique_tags:
             # Get top 20 unique tags for display
             top_unique_tags = sorted(unique_tags.items(), key=lambda x: x[0])[:20]
-            unique_tags_list = [f"{tag}" for tag, _ in top_unique_tags]
-            st.write(", ".join(unique_tags_list))
+            unique_tags_list = []
+            for i, (tag, _) in enumerate(top_unique_tags, 1):
+                unique_tags_list.append(f'<span class="unique-item">{tag}</span>')
+            st.markdown(', '.join(unique_tags_list), unsafe_allow_html=True)
             if len(unique_tags) > 20:
-                st.write(f"...and {len(unique_tags) - 20} more")
+                st.write(f"...и еще {len(unique_tags) - 20} тегов (...and {len(unique_tags) - 20} more)")
         else:
-            st.write("No non-overlapping tags found across the videos.")
+            st.write("Уникальных тегов не найдено (No unique tags found)")
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # Common words in descriptions section
-        st.markdown(f"##### Common Words in Descriptions ({words_percentage:.0f}%)")
+        st.markdown('<div class="analysis-container">', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Общие слова в описаниях (Common Words in Descriptions)</div>', unsafe_allow_html=True)
         if common_words:
             # Create a formatted list of words with their occurrence counts
-            words_list = [f"{word} (appears in {count} out of {total} videos)" 
-                        for word, count, total in common_words]
-            st.write(", ".join(words_list))
+            words_list = []
+            for i, (word, count, total) in enumerate(common_words, 1):
+                words_list.append(f'<span class="common-item">{i}. {word} (встречается в {count} из {total} видео)</span>')
+            st.markdown('<br>'.join(words_list), unsafe_allow_html=True)
         else:
-            st.write("No common words found across the video descriptions.")
+            st.write("Общих слов в описаниях не найдено (No common words found in descriptions)")
             
         # Non-overlapping words in descriptions section
-        st.markdown("##### Non-overlapping Words in Descriptions")
+        st.markdown('<div class="section-header">Уникальные слова в описаниях (Non-overlapping Words in Descriptions)</div>', unsafe_allow_html=True)
         if unique_desc_words:
             # Get top 20 unique words for display
             top_unique_desc_words = sorted(unique_desc_words.items(), key=lambda x: x[0])[:20]
-            unique_desc_list = [f"{word}" for word, _ in top_unique_desc_words]
-            st.write(", ".join(unique_desc_list))
+            unique_desc_list = []
+            for i, (word, _) in enumerate(top_unique_desc_words, 1):
+                unique_desc_list.append(f'<span class="unique-item">{word}</span>')
+            st.markdown(', '.join(unique_desc_list), unsafe_allow_html=True)
             if len(unique_desc_words) > 20:
-                st.write(f"...and {len(unique_desc_words) - 20} more")
+                st.write(f"...и еще {len(unique_desc_words) - 20} слов (...and {len(unique_desc_words) - 20} more)")
         else:
-            st.write("No non-overlapping words found in the video descriptions.")
+            st.write("Уникальных слов в описаниях не найдено (No unique words found in descriptions)")
+        st.markdown('</div>', unsafe_allow_html=True)
         
         # Add a clear divider between Analysis Results and Video Details
         st.divider()
