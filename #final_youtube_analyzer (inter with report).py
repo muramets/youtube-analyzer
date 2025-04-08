@@ -297,9 +297,50 @@ def main():
             )
             if not title_df.empty:
                 st.markdown("This table shows words that appear in multiple videos:")
-                # Convert dataframe to HTML to make links clickable
-                html = title_df.to_html(escape=False, index=True)
-                st.markdown(html, unsafe_allow_html=True)
+                # Using st.dataframe for better user experience 
+                # but also displaying HTML table for clickable links
+                
+                # Add custom CSS to make the HTML table look like a Streamlit dataframe
+                st.markdown("""
+                <style>
+                .dataframe {
+                    border-collapse: collapse;
+                    margin: 10px 0;
+                    font-size: 14px;
+                    width: 100%;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    display: block;
+                }
+                .dataframe th {
+                    background-color: #f8f9fa;
+                    color: #404040;
+                    font-weight: 500;
+                    text-align: left;
+                    padding: 8px;
+                    border-bottom: 1px solid #e6e6e6;
+                }
+                .dataframe td {
+                    text-align: left;
+                    padding: 8px;
+                    border-bottom: 1px solid #e6e6e6;
+                }
+                .dataframe tr:hover {
+                    background-color: #f1f1f1;
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                # Convert dataframe to HTML with clickable links
+                html = title_df.to_html(escape=False, index=True, classes="dataframe")
+                st.markdown(f'<div style="height:300px; overflow:auto;">{html}</div>', unsafe_allow_html=True)
+                
+                # Also show the dataframe for search functionality, but hide the Videos column
+                with st.expander("Show searchable table (non-clickable)"):
+                    search_df = title_df.copy()
+                    # Replace HTML with plain text for the search table
+                    search_df['Videos'] = search_df['Videos'].apply(lambda x: x.replace('<a href', '').replace('</a>', ''))
+                    st.dataframe(search_df, height=300)
             else:
                 st.info("No common words found in titles.")
         
@@ -311,9 +352,16 @@ def main():
             )
             if not tag_df.empty:
                 st.markdown("This table shows tags that appear in multiple videos:")
-                # Convert dataframe to HTML to make links clickable
-                html = tag_df.to_html(escape=False, index=True)
-                st.markdown(html, unsafe_allow_html=True)
+                # Convert dataframe to HTML with clickable links
+                html = tag_df.to_html(escape=False, index=True, classes="dataframe")
+                st.markdown(f'<div style="height:300px; overflow:auto;">{html}</div>', unsafe_allow_html=True)
+                
+                # Also show the dataframe for search functionality
+                with st.expander("Show searchable table (non-clickable)"):
+                    search_df = tag_df.copy()
+                    # Replace HTML with plain text for the search table
+                    search_df['Videos'] = search_df['Videos'].apply(lambda x: x.replace('<a href', '').replace('</a>', ''))
+                    st.dataframe(search_df, height=300)
             else:
                 st.info("No common tags found.")
         
@@ -325,9 +373,16 @@ def main():
             )
             if not desc_df.empty:
                 st.markdown("This table shows words from descriptions that appear in multiple videos:")
-                # Convert dataframe to HTML to make links clickable
-                html = desc_df.to_html(escape=False, index=True)
-                st.markdown(html, unsafe_allow_html=True)
+                # Convert dataframe to HTML with clickable links
+                html = desc_df.to_html(escape=False, index=True, classes="dataframe")
+                st.markdown(f'<div style="height:300px; overflow:auto;">{html}</div>', unsafe_allow_html=True)
+                
+                # Also show the dataframe for search functionality
+                with st.expander("Show searchable table (non-clickable)"):
+                    search_df = desc_df.copy()
+                    # Replace HTML with plain text for the search table
+                    search_df['Videos'] = search_df['Videos'].apply(lambda x: x.replace('<a href', '').replace('</a>', ''))
+                    st.dataframe(search_df, height=300)
             else:
                 st.info("No common words found in descriptions.")
         
