@@ -15,139 +15,67 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Force sidebar to be expanded by default
 )
 
-# Apply more aggressive CSS to force fixed width and centered layout
-# Make sure sidebar is visible
+# Apply minimal CSS to fix layout issues
 st.markdown("""
 <style>
-    /* Global settings to hide scrollbars while maintaining scroll functionality */
-    body {
-        overflow-x: hidden !important;
-    }
-    
-    /* Subtle sidebar styling that doesn't break layout */
-    [data-testid="stSidebar"] {
+    /* Fix sidebar positioning */
+    section[data-testid="stSidebar"] {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        z-index: 999 !important;
+        height: 100% !important;
         background-color: #1E1E1E !important;
         border-right: 1px solid #333 !important;
     }
     
     /* Style sidebar header */
-    [data-testid="stSidebar"] h1, 
-    [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3 {
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3 {
         color: #FFFFFF !important;
     }
     
-    /* Hide scrollbar for Chrome, Safari and Opera */
-    ::-webkit-scrollbar {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-    }
-    
-    /* Hide scrollbar for IE, Edge and Firefox */
-    html, body, div {
-        -ms-overflow-style: none !important;  /* IE and Edge */
-        scrollbar-width: none !important;     /* Firefox */
-    }
-    
-    /* Main container styling */
+    /* Remove fixed width from main container */
     .main .block-container {
-        max-width: 1000px !important;
-        padding-top: 2rem !important;
-        padding-right: 2rem !important;
-        padding-left: 2rem !important;
-        padding-bottom: 2rem !important;
-        margin: 0 auto !important;
-        overflow-x: hidden !important;
+        max-width: none !important;
+        padding: 2rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
     
-    /* App container styling - updated for Streamlit 1.44+ */
+    /* Fix app container */
     div[data-testid="stAppViewContainer"] {
         width: 100% !important;
-        overflow-x: hidden !important;
-    }
-    
-    /* Center content with fixed width */
-    div[data-testid="stAppViewContainer"] > section,
-    div[data-testid="stAppViewContainer"] > div,
-    div[data-testid="stAppViewContainer"] > section > div,
-    div[data-testid="stAppViewContainer"] > section > div > div {
-        max-width: 1000px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
-        overflow-x: hidden !important;
     }
     
-    /* Ensure horizontal blocks don't cause overflow */
-    div[data-testid="stHorizontalBlock"],
-    div[data-testid="stVerticalBlock"] {
+    /* Remove margins from main content */
+    div[data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]) {
         width: 100% !important;
-        max-width: 1000px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
-        overflow-x: hidden !important;
     }
     
-    /* Unified background color for the entire app */
+    /* Make sure sidebar is visible on small screens */
+    @media (max-width: 992px) {
+        section[data-testid="stSidebar"] {
+            position: fixed !important;
+            width: 250px !important;
+        }
+    }
+    
+    /* Unified background color */
     .stApp, .main .block-container {
         background-color: #121212 !important;
     }
     
-    /* Ensure scrolling still works but scrollbar is hidden */
-    .stApp {
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        -ms-overflow-style: none !important;  /* IE and Edge */
-        scrollbar-width: none !important;     /* Firefox */
-    }
-    
-    /* Image styling */
-    .stImage img {
-        display: block !important;
-        margin: 0 !important;
-    }
-    
-    /* Center title only */
-    h1 {
-        text-align: center !important;
-    }
-    
-    /* Left-align other text elements */
-    .stMarkdown, .stText, h2, h3, h4, h5, h6, p {
-        text-align: left !important;
-    }
-    
-    /* Add spacing between sections */
-    .section-divider {
-        margin-top: 2rem !important;
-        margin-bottom: 2rem !important;
-    }
-    
-    /* Highlight matching elements with text color instead of background */
-    .highlight {
-        color: #008000 !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Make sure input fields don't stretch */
-    .stTextInput, .stButton {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-    
-    /* Custom styling for clickable images */
-    .clickable-image {
-        cursor: pointer !important;
-        transition: transform 0.3s ease !important;
-    }
-    
-    .clickable-image:hover {
-        transform: scale(1.02) !important;
-    }
+    /* Basic styling for other elements */
+    h1 { text-align: center !important; }
+    .highlight { color: #008000 !important; font-weight: 500 !important; }
 </style>
 """, unsafe_allow_html=True)
 # Initialize YouTube API client
