@@ -72,7 +72,7 @@ def tokenize_text(text):
     # Convert to lowercase and split by non-alphanumeric characters
     words = re.findall(r'\b\w+\b', text.lower())
     
-    # Common stop words to filter out
+    # Common stop words to filter out (including URL components)
     stop_words = {
         'a', 'an', 'the', 'and', 'or', 'but', 'if', 'because', 'as', 'what',
         'when', 'where', 'how', 'why', 'which', 'who', 'whom', 'this', 'that',
@@ -82,7 +82,10 @@ def tokenize_text(text):
         'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having',
         'do', 'does', 'did', 'doing', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
         'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'its', 'our', 'their',
-        'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must'
+        'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must',
+        # URL components
+        'http', 'https', 'www', 'com', 'org', 'net', 'html', 'htm', 'php', 'aspx',
+        'jsp', 'url', 'uri', 'href'
     }
     
     # Filter out stop words and short words
@@ -180,6 +183,11 @@ def main():
     # URL input section
     st.subheader("Add YouTube Videos")
     
+    # Function to remove URL field
+    def remove_url_field():
+        if len(st.session_state.video_urls) > 1:
+            st.session_state.video_urls.pop()
+    
     # Display URL input fields
     for i, url in enumerate(st.session_state.video_urls):
         col1, col2 = st.columns([6, 1])
@@ -191,7 +199,12 @@ def main():
             )
         if i == len(st.session_state.video_urls) - 1:
             with col2:
-                st.button("➕ Add Video", on_click=add_url_field)
+                # Show Add button by default for the first field or if field has content
+                # Show Delete button if it's not the first field and is empty
+                if i == 0 or url.strip():
+                    st.button("➕ Add Video", on_click=add_url_field)
+                else:
+                    st.button("❌ Delete", on_click=remove_url_field)
     
     # Analyze button
     analyze_clicked = st.button("Analyze Videos", type="primary")
@@ -285,6 +298,9 @@ def main():
             video_container = st.container()
             
             with video_container:
+                # Add HTML anchor for navigation from tables
+                st.markdown(f"<div id='video-{i+1}'></div>", unsafe_allow_html=True)
+                
                 # Display title with link
                 st.markdown(f"### {i+1}. {video['title']} ([Link](https://www.youtube.com/watch?v={video['id']}))")
                 
@@ -300,11 +316,10 @@ def main():
                     st.write(f"**Published:** {format_datetime(video['published_at'])}")
                     st.write(f"**Views:** {video['view_count']:,}")
                 
-                # Tags expander (YouTube-style)
+                # Tags expander with comma-separated list
                 if video.get('tags'):
                     with st.expander("Tags"):
-                        # Create a horizontal layout for tags
-                        tag_html = '<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">'
+                        tags_list = []
                         
                         for tag in video.get('tags', []):
                             tag_lower = tag.lower()
@@ -321,16 +336,17 @@ def main():
                                         if video_idx is not None:
                                             videos_with_tag.append(f"Video {video_idx+1}")
                                 
-                                # YouTube-style tag with common word highlighting
+                                # Common tag with highlighting
                                 if videos_with_tag:
-                                    tag_html += f'<span style="background-color: #e9e9e9; color: #006400; font-weight: bold; padding: 4px 8px; border-radius: 16px; font-size: 14px;" title="Also in: {", ".join(videos_with_tag)}">{tag}</span>'
+                                    tags_list.append(f'<span style="color: #006400; font-weight: bold;" title="Also in: {", ".join(videos_with_tag)}">{tag}</span>')
                                 else:
-                                    tag_html += f'<span style="background-color: #e9e9e9; padding: 4px 8px; border-radius: 16px; font-size: 14px;">{tag}</span>'
+                                    tags_list.append(tag)
                             else:
-                                tag_html += f'<span style="background-color: #e9e9e9; padding: 4px 8px; border-radius: 16px; font-size: 14px;">{tag}</span>'
+                                tags_list.append(tag)
                         
-                        tag_html += '</div>'
-                        st.markdown(tag_html, unsafe_allow_html=True)
+                        # Join tags with commas
+                        tags_html = ", ".join(tags_list)
+                        st.markdown(tags_html, unsafe_allow_html=True)
                 
                 # Description expander (YouTube-style)
                 if video.get('description'):
@@ -354,10 +370,20 @@ def create_word_frequency_df(word_count, total_videos):
     data = []
     for word, (count, video_ids) in word_count.items():
         if count > 1:  # Only include words that appear in more than one video
+            # Create clickable links for each video
+            video_links = []
+            for i, video_id in enumerate(video_ids):
+                # Create HTML anchor tags that will jump to the video section
+                video_num = i + 1
+                video_links.append(f'<a href="#video-{video_num}">Video {video_num}</a>')
+            
+            # Join with commas
+            videos_html = ", ".join(video_links)
+            
             data.append({
                 'Word': word,
                 'Frequency': f"{count} out of {total_videos}",
-                'Videos': ', '.join([f"Video {i+1}" for i, _ in enumerate(video_ids)]),
+                'Videos': videos_html,
                 'Count': count  # For sorting
             })
     
