@@ -297,7 +297,9 @@ def main():
             )
             if not title_df.empty:
                 st.markdown("This table shows words that appear in multiple videos:")
-                st.dataframe(title_df, height=300, unsafe_allow_html=True)
+                # Convert dataframe to HTML to make links clickable
+                html = title_df.to_html(escape=False, index=True)
+                st.markdown(html, unsafe_allow_html=True)
             else:
                 st.info("No common words found in titles.")
         
@@ -309,7 +311,9 @@ def main():
             )
             if not tag_df.empty:
                 st.markdown("This table shows tags that appear in multiple videos:")
-                st.dataframe(tag_df, height=300, unsafe_allow_html=True)
+                # Convert dataframe to HTML to make links clickable
+                html = tag_df.to_html(escape=False, index=True)
+                st.markdown(html, unsafe_allow_html=True)
             else:
                 st.info("No common tags found.")
         
@@ -321,7 +325,9 @@ def main():
             )
             if not desc_df.empty:
                 st.markdown("This table shows words from descriptions that appear in multiple videos:")
-                st.dataframe(desc_df, height=300, unsafe_allow_html=True)
+                # Convert dataframe to HTML to make links clickable
+                html = desc_df.to_html(escape=False, index=True)
+                st.markdown(html, unsafe_allow_html=True)
             else:
                 st.info("No common words found in descriptions.")
         
@@ -417,8 +423,8 @@ def create_word_frequency_df(word_count, total_videos):
                 for video in videos_data:
                     if video['id'] == video_id:
                         url = f"https://www.youtube.com/watch?v={video['id']}"
-                        # Format as "N video" with clickable link
-                        video_links.append(f'<a href="{url}" target="_blank">{video_counter} video</a>')
+                        # Format as "N video" with clickable link and better styling
+                        video_links.append(f'<a href="{url}" target="_blank" style="color: #1a73e8; text-decoration: underline; font-weight: bold;">{video_counter} video</a>')
                         video_counter += 1
                         break
             
