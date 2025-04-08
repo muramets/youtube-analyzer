@@ -15,19 +15,28 @@ st.set_page_config(
     initial_sidebar_state="expanded"  # Force sidebar to be expanded by default
 )
 
-# Apply CSS to fix layout issues and prevent sidebar overlap
+# Apply more aggressive CSS to fix layout issues and prevent sidebar overlap
 st.markdown("""
 <style>
-    /* Fix sidebar positioning */
-    section[data-testid="stSidebar"] {
+    /* More aggressive reset for all elements */
+    * {
+        box-sizing: border-box !important;
+    }
+    
+    /* Fix sidebar positioning with stronger selectors */
+    section[data-testid="stSidebar"],
+    .css-1d391kg,
+    .css-1oe6wy4 {
         position: fixed !important;
         left: 0 !important;
         top: 0 !important;
-        z-index: 999 !important;
-        height: 100% !important;
+        bottom: 0 !important;
+        width: 220px !important;
+        max-width: 220px !important;
         background-color: #1E1E1E !important;
         border-right: 1px solid #333 !important;
-        width: 250px !important;
+        overflow-y: auto !important;
+        z-index: 999 !important;
     }
     
     /* Style sidebar header */
@@ -37,36 +46,56 @@ st.markdown("""
         color: #FFFFFF !important;
     }
     
-    /* Add margin to main content to prevent sidebar overlap */
-    .main .block-container {
+    /* Force main content to respect sidebar width */
+    .main .block-container,
+    [data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]) .block-container,
+    .css-18e3th9 .css-1d391kg,
+    .css-18e3th9 .css-1oe6wy4 {
+        width: calc(100% - 220px) !important;
+        margin-left: 220px !important;
         max-width: none !important;
         padding: 2rem !important;
-        width: calc(100% - 250px) !important;
-        margin-left: 250px !important;
-        box-sizing: border-box !important;
     }
     
     /* Fix app container */
-    div[data-testid="stAppViewContainer"] {
+    div[data-testid="stAppViewContainer"],
+    .css-18e3th9 {
         width: 100% !important;
+        padding: 0 !important;
     }
     
     /* Fix main content section */
-    div[data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]) {
+    div[data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]),
+    .css-18e3th9 > section:not([data-testid="stSidebar"]) {
         width: 100% !important;
-        margin-right: 0 !important;
-        padding-right: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     
-    /* Fix sidebar toggle button to reflect state */
-    button[kind="header"] {
-        left: 250px !important;
+    /* Fix sidebar toggle button */
+    button[kind="header"],
+    .css-fblp2m,
+    .css-1rs6os {
+        position: fixed !important;
+        left: 220px !important;
+        top: 0.5rem !important;
+        z-index: 1000 !important;
     }
     
     /* When sidebar is collapsed, adjust main content */
-    [data-testid="collapsedControl"] ~ section:not([data-testid="stSidebar"]) .block-container {
+    [data-testid="collapsedControl"] ~ section:not([data-testid="stSidebar"]) .block-container,
+    .css-1y4p8pa ~ section:not([data-testid="stSidebar"]) .block-container,
+    .css-1y4p8pa ~ .css-18e3th9 .css-1d391kg {
         margin-left: 0 !important;
         width: 100% !important;
+    }
+    
+    /* Hide sidebar completely when collapsed */
+    [data-testid="collapsedControl"] ~ section[data-testid="stSidebar"],
+    .css-1y4p8pa ~ section[data-testid="stSidebar"],
+    .css-1y4p8pa ~ .css-1d391kg {
+        width: 0 !important;
+        opacity: 0 !important;
     }
     
     /* Unified background color */
@@ -77,6 +106,31 @@ st.markdown("""
     /* Basic styling for other elements */
     h1 { text-align: center !important; }
     .highlight { color: #008000 !important; font-weight: 500 !important; }
+    
+    /* Add custom script to fix toggle button behavior */
+    </style>
+<script>
+    // Function to observe DOM changes and fix toggle button
+    const observer = new MutationObserver(function(mutations) {
+        // Find the toggle button
+        const toggleButton = document.querySelector('button[kind="header"], .css-fblp2m, .css-1rs6os');
+        if (toggleButton) {
+            // Check if sidebar is collapsed
+            const sidebarCollapsed = document.querySelector('[data-testid="collapsedControl"], .css-1y4p8pa');
+            if (sidebarCollapsed) {
+                // Sidebar is collapsed, adjust button position
+                toggleButton.style.left = '0px';
+            } else {
+                // Sidebar is expanded, adjust button position
+                toggleButton.style.left = '220px';
+            }
+        }
+    });
+    
+    // Start observing the document
+    observer.observe(document, { childList: true, subtree: true });
+</script>
+<style>
 </style>
 """, unsafe_allow_html=True)
 # Initialize YouTube API client
