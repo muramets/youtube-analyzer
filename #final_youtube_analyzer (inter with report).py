@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Apply CSS for highlighting and sidebar width
+# Apply CSS for highlighting, sidebar width, and consistent padding
 st.markdown("""
 <style>
     /* Highlight matching elements with green text color */
@@ -40,6 +40,22 @@ st.markdown("""
     [data-testid="stSidebar"] .stMarkdown, 
     [data-testid="stSidebar"] .stTextInput {
         word-wrap: break-word !important;
+    }
+    
+    /* Add consistent padding on both sides */
+    .main .block-container {
+        padding-right: 2rem !important;
+        padding-left: 2rem !important;
+        max-width: 100% !important;
+    }
+    
+    /* Style for video links */
+    .video-link {
+        color: #0066cc !important;
+        text-decoration: none !important;
+    }
+    .video-link:hover {
+        text-decoration: underline !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -112,18 +128,25 @@ def format_date(date_str):
 # Find common tags across videos (appearing in at least 2 videos)
 def find_common_tags(videos_data):
     if not videos_data or len(videos_data) < 2:
-        return [], 0, {}
+        return [], 0, {}, {}
     
     # Collect all unique tags across all videos
     all_tags = set()
     for video in videos_data:
         all_tags.update(video['tags'])
     
-    # Count occurrences of each tag
+    # Count occurrences of each tag and track which videos contain each tag
     tag_counts = {}
-    for video in videos_data:
+    tag_to_videos_map = {}  # Map tags to videos they appear in
+    
+    for i, video in enumerate(videos_data):
         for tag in set(video['tags']):  # Use set to count each tag only once per video
             tag_counts[tag] = tag_counts.get(tag, 0) + 1
+            
+            # Map each tag to the videos it appears in
+            if tag not in tag_to_videos_map:
+                tag_to_videos_map[tag] = []
+            tag_to_videos_map[tag].append(i)
     
     # Find tags that appear in at least 2 videos
     common_tags = {tag: count for tag, count in tag_counts.items() if count >= 2}
@@ -138,11 +161,63 @@ def find_common_tags(videos_data):
     if all_tags:
         overall_percentage = (len(common_tags) / len(all_tags)) * 100
         
-        # Create result list with individual tag info and count
+        # Create result list with individual tag info, count, and video indices
         for tag, count in sorted(common_tags.items(), key=lambda x: x[1], reverse=True):
-            result.append((tag, count, len(videos_data)))
+            result.append((tag, count, len(videos_data), tag_to_videos_map[tag]))
     
-    return result, overall_percentage, unique_tags
+    return result, overall_percentage, unique_tags, tag_to_videos_map
+
+# Identify compound words that should be kept together
+def identify_compound_words(text):
+    # List of known compound terms
+    compound_terms = [
+        "hip hop", "lo fi", "lofi", "lo-fi", "chillhop", "background music", 
+        "chill out", "chill mix", "beach music", "summer lofi", "jazz music",
+        "lofi beats", "chill beats", "lofi hip hop", "lo fi hip hop", "lo-fi hip hop",
+        "chill lofi", "chill lo fi", "chill lo-fi"
+    ]
+    
+    # Find all compound terms in the text
+    text_lower = text.lower()
+    compound_indices = []
+    
+    for term in compound_terms:
+        start = 0
+        while start < len(text_lower):
+            pos = text_lower.find(term, start)
+            if pos == -1:
+                break
+            compound_indices.append((pos, pos + len(term), term))
+            start = pos + 1
+    
+    # Sort by position
+    compound_indices.sort()
+    
+    # Create a list of tokens including compound terms
+    if not compound_indices:
+        # If no compound terms found, return None to use default tokenization
+        return None
+    
+    # Otherwise, tokenize the text with compound terms preserved
+    tokens = []
+    last_end = 0
+    
+    for start, end, term in compound_indices:
+        # Add tokens before the compound term
+        if start > last_end:
+            before_text = text[last_end:start]
+            tokens.extend([t for t in word_tokenize(before_text.lower()) if t.isalpha()])
+        
+        # Add the compound term
+        tokens.append(term)
+        last_end = end
+    
+    # Add remaining text after last compound term
+    if last_end < len(text):
+        remaining_text = text[last_end:]
+        tokens.extend([t for t in word_tokenize(remaining_text.lower()) if t.isalpha()])
+    
+    return tokens
 
 # Download all required NLTK resources
 def download_nltk_resources():
@@ -156,7 +231,7 @@ def download_nltk_resources():
 # Find common words in descriptions (appearing in at least 2 videos)
 def find_common_words(videos_data, min_frequency=2):
     if not videos_data or len(videos_data) < 2:
-        return [], 0, {}
+        return [], 0, {}, {}
     
     # Download NLTK resources if not already downloaded
     download_nltk_resources()
@@ -165,7 +240,6 @@ def find_common_words(videos_data, min_frequency=2):
     all_descriptions = [video['description'] for video in videos_data]
     
     # Tokenize and clean words
-    all_words_lists = []
     all_unique_words = set()
     stop_words = set(stopwords.words('english') + stopwords.words('russian'))
     
@@ -173,23 +247,40 @@ def find_common_words(videos_data, min_frequency=2):
     video_words = []
     
     for description in all_descriptions:
-        # Tokenize
-        words = word_tokenize(description.lower())
+        # Try to identify compound words first
+        compound_tokens = identify_compound_words(description)
         
-        # Filter out stopwords, punctuation, and short words
-        filtered_words = [
-            word for word in words 
-            if word.isalpha() and word not in stop_words and len(word) > 2
-        ]
+        if compound_tokens:
+            # If compound words were found, use those tokens
+            # Filter out stopwords and short words
+            filtered_words = [
+                word for word in compound_tokens 
+                if word not in stop_words and len(word) > 2
+            ]
+        else:
+            # Fall back to regular tokenization
+            words = word_tokenize(description.lower())
+            # Filter out stopwords, punctuation, and short words
+            filtered_words = [
+                word for word in words 
+                if word.isalpha() and word not in stop_words and len(word) > 2
+            ]
         
         video_words.append(set(filtered_words))
         all_unique_words.update(filtered_words)
     
-    # Count occurrences of each word across videos
+    # Count occurrences of each word across videos and track which videos contain each word
     word_counts = {}
-    for words in video_words:
+    word_to_videos_map = {}  # Map words to videos they appear in
+    
+    for i, words in enumerate(video_words):
         for word in words:
             word_counts[word] = word_counts.get(word, 0) + 1
+            
+            # Map each word to the videos it appears in
+            if word not in word_to_videos_map:
+                word_to_videos_map[word] = []
+            word_to_videos_map[word].append(i)
     
     # Find words that appear in at least 2 videos
     common_words = {word: count for word, count in word_counts.items() if count >= 2}
@@ -204,16 +295,16 @@ def find_common_words(videos_data, min_frequency=2):
     if all_unique_words:
         overall_percentage = (len(common_words) / len(all_unique_words)) * 100
         
-        # Create result list with individual word info and count
+        # Create result list with individual word info, count, and video indices
         for word, count in sorted(common_words.items(), key=lambda x: x[1], reverse=True):
-            result.append((word, count, len(videos_data)))
+            result.append((word, count, len(videos_data), word_to_videos_map[word]))
     
-    return result, overall_percentage, unique_words
+    return result, overall_percentage, unique_words, word_to_videos_map
 
 # Find common words in titles (appearing in at least 2 videos)
 def find_common_title_words(videos_data):
     if not videos_data or len(videos_data) < 2:
-        return [], 0, {}
+        return [], 0, {}, {}
     
     # Download NLTK resources if not already downloaded
     download_nltk_resources()
@@ -222,7 +313,6 @@ def find_common_title_words(videos_data):
     all_titles = [video['title'] for video in videos_data]
     
     # Tokenize and clean words
-    all_words_lists = []
     all_unique_words = set()
     stop_words = set(stopwords.words('english') + stopwords.words('russian'))
     
@@ -230,23 +320,40 @@ def find_common_title_words(videos_data):
     video_words = []
     
     for title in all_titles:
-        # Tokenize
-        words = word_tokenize(title.lower())
+        # Try to identify compound words first
+        compound_tokens = identify_compound_words(title)
         
-        # Filter out stopwords, punctuation, and short words
-        filtered_words = [
-            word for word in words 
-            if word.isalpha() and word not in stop_words and len(word) > 2
-        ]
+        if compound_tokens:
+            # If compound words were found, use those tokens
+            # Filter out stopwords and short words
+            filtered_words = [
+                word for word in compound_tokens 
+                if word not in stop_words and len(word) > 2
+            ]
+        else:
+            # Fall back to regular tokenization
+            words = word_tokenize(title.lower())
+            # Filter out stopwords, punctuation, and short words
+            filtered_words = [
+                word for word in words 
+                if word.isalpha() and word not in stop_words and len(word) > 2
+            ]
         
         video_words.append(set(filtered_words))
         all_unique_words.update(filtered_words)
     
-    # Count occurrences of each word across videos
+    # Count occurrences of each word across videos and track which videos contain each word
     word_counts = {}
-    for words in video_words:
+    word_to_videos_map = {}  # Map words to videos they appear in
+    
+    for i, words in enumerate(video_words):
         for word in words:
             word_counts[word] = word_counts.get(word, 0) + 1
+            
+            # Map each word to the videos it appears in
+            if word not in word_to_videos_map:
+                word_to_videos_map[word] = []
+            word_to_videos_map[word].append(i)
     
     # Find words that appear in at least 2 videos
     common_words = {word: count for word, count in word_counts.items() if count >= 2}
@@ -261,11 +368,11 @@ def find_common_title_words(videos_data):
     if all_unique_words:
         overall_percentage = (len(common_words) / len(all_unique_words)) * 100
         
-        # Create result list with individual word info and count
+        # Create result list with individual word info, count, and video indices
         for word, count in sorted(common_words.items(), key=lambda x: x[1], reverse=True):
-            result.append((word, count, len(videos_data)))
+            result.append((word, count, len(videos_data), word_to_videos_map[word]))
     
-    return result, overall_percentage, unique_words
+    return result, overall_percentage, unique_words, word_to_videos_map
 
 # Function to generate Excel file with recommendations
 def generate_excel_file(videos_data, common_title_words, common_tags, common_words, 
@@ -560,10 +667,10 @@ def main():
                 st.error("No valid videos to analyze.")
                 return
             
-            # Find common elements
-            common_title_words, title_words_percentage, unique_title_words = find_common_title_words(videos_data)
-            common_tags, tags_percentage, unique_tags = find_common_tags(videos_data)
-            common_words, words_percentage, unique_desc_words = find_common_words(videos_data)
+        # Find common elements
+            common_title_words, title_words_percentage, unique_title_words, title_word_videos_map = find_common_title_words(videos_data)
+            common_tags, tags_percentage, unique_tags, tag_videos_map = find_common_tags(videos_data)
+            common_words, words_percentage, unique_desc_words, desc_word_videos_map = find_common_words(videos_data)
             
             # Store results in session state
             st.session_state.videos_data = videos_data
@@ -592,6 +699,17 @@ def main():
         words_percentage = st.session_state.words_percentage
         unique_desc_words = st.session_state.unique_desc_words
         
+        # Function to generate links to videos
+        def generate_video_links(video_indices, videos):
+            # Format video indices as 1-based for display
+            formatted_indices = [str(idx + 1) for idx in video_indices]
+            
+            # Create link HTML
+            links_html = ", ".join([f'<a href="#video_{idx+1}" class="video-link">Video {idx+1}</a>' 
+                                  for idx in video_indices])
+            
+            return links_html
+        
         # Display results in scrollable tables
         st.subheader("Analysis Results")
         
@@ -600,11 +718,14 @@ def main():
         if common_title_words:
             # Create a dataframe for common title words
             title_words_data = {
-                "Word": [word for word, count, total in common_title_words],
-                "Appears in": [f"{count} out of {total} videos" for word, count, total in common_title_words]
+                "#": list(range(1, len(common_title_words) + 1)),  # 1-based indexing
+                "Word": [word for word, count, total, _ in common_title_words],
+                "Appears in": [f"{count} out of {total} videos" for word, count, total, _ in common_title_words],
+                "Found in": [generate_video_links(video_indices, videos_data) 
+                           for _, _, _, video_indices in common_title_words]
             }
             title_df = pd.DataFrame(title_words_data)
-            st.dataframe(title_df, height=200)
+            st.write(title_df.to_html(escape=False, index=False), unsafe_allow_html=True)
         else:
             st.write("No common words found across the video titles.")
             
@@ -617,6 +738,8 @@ def main():
                 "Appears in": ["1 video" for _ in unique_title_words]
             }
             unique_title_df = pd.DataFrame(unique_title_data)
+            # Add row numbers starting from 1
+            unique_title_df.index = unique_title_df.index + 1
             st.dataframe(unique_title_df, height=200)
         else:
             st.write("No non-overlapping words found in the video titles.")
@@ -626,11 +749,14 @@ def main():
         if common_tags:
             # Create a dataframe for common tags
             tags_data = {
-                "Tag": [tag for tag, count, total in common_tags],
-                "Appears in": [f"{count} out of {total} videos" for tag, count, total in common_tags]
+                "#": list(range(1, len(common_tags) + 1)),  # 1-based indexing
+                "Tag": [tag for tag, count, total, _ in common_tags],
+                "Appears in": [f"{count} out of {total} videos" for tag, count, total, _ in common_tags],
+                "Found in": [generate_video_links(video_indices, videos_data) 
+                           for _, _, _, video_indices in common_tags]
             }
             tags_df = pd.DataFrame(tags_data)
-            st.dataframe(tags_df, height=200)
+            st.write(tags_df.to_html(escape=False, index=False), unsafe_allow_html=True)
         else:
             st.write("No common tags found across the videos.")
             
@@ -643,6 +769,8 @@ def main():
                 "Appears in": ["1 video" for _ in unique_tags]
             }
             unique_tags_df = pd.DataFrame(unique_tags_data)
+            # Add row numbers starting from 1
+            unique_tags_df.index = unique_tags_df.index + 1
             st.dataframe(unique_tags_df, height=200)
         else:
             st.write("No non-overlapping tags found across the videos.")
@@ -652,11 +780,14 @@ def main():
         if common_words:
             # Create a dataframe for common description words
             words_data = {
-                "Word": [word for word, count, total in common_words],
-                "Appears in": [f"{count} out of {total} videos" for word, count, total in common_words]
+                "#": list(range(1, len(common_words) + 1)),  # 1-based indexing
+                "Word": [word for word, count, total, _ in common_words],
+                "Appears in": [f"{count} out of {total} videos" for word, count, total, _ in common_words],
+                "Found in": [generate_video_links(video_indices, videos_data) 
+                           for _, _, _, video_indices in common_words]
             }
             words_df = pd.DataFrame(words_data)
-            st.dataframe(words_df, height=200)
+            st.write(words_df.to_html(escape=False, index=False), unsafe_allow_html=True)
         else:
             st.write("No common words found across the video descriptions.")
             
@@ -669,6 +800,8 @@ def main():
                 "Appears in": ["1 video" for _ in unique_desc_words]
             }
             unique_desc_df = pd.DataFrame(unique_desc_data)
+            # Add row numbers starting from 1
+            unique_desc_df.index = unique_desc_df.index + 1
             st.dataframe(unique_desc_df, height=200)
         else:
             st.write("No non-overlapping words found in the video descriptions.")
@@ -726,10 +859,13 @@ def main():
         # Sort videos by match score (highest to lowest)
         sorted_videos = sorted(videos_data, key=lambda x: x['match_score'], reverse=True)
         
-        for video in sorted_videos:
+        for i, video in enumerate(sorted_videos):
+            # Add anchor for this video (1-based index)
+            video_num = i + 1
+            st.markdown(f'<div id="video_{video_num}"></div>', unsafe_allow_html=True)
             st.write("---")
             
-            # Video title
+            # Video title with YouTube link
             title_html = video['title']
             # Highlight common words in title while preserving original case
             for word in common_title_words_set:
@@ -737,7 +873,12 @@ def main():
                 pattern = re.compile(re.escape(word), re.IGNORECASE)
                 title_html = pattern.sub(lambda m: f'<span class="highlight">{m.group(0)}</span>', title_html)
             
-            st.markdown(f"**Title:** {title_html}", unsafe_allow_html=True)
+            # Add YouTube link after title
+            yt_link = f"https://www.youtube.com/watch?v={video['video_id']}"
+            st.markdown(
+                f"**Title:** {title_html} (<a href='{yt_link}' class='video-link' target='_blank'>link</a>)", 
+                unsafe_allow_html=True
+            )
             
             # Display thumbnail with fixed width
             st.image(video['thumbnail'], width=426)
