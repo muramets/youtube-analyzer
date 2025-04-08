@@ -184,18 +184,22 @@ def find_common_tags(videos_data):
     
     return result, overall_percentage
 
+# Download all required NLTK resources
+def download_nltk_resources():
+    resources = ['punkt', 'stopwords', 'punkt_tab']
+    for resource in resources:
+        try:
+            nltk.data.find(f'tokenizers/{resource}')
+        except LookupError:
+            nltk.download(resource)
+
 # Find common words in descriptions
 def find_common_words(videos_data, min_frequency=2):
     if not videos_data:
         return [], 0
     
     # Download NLTK resources if not already downloaded
-    try:
-        nltk.data.find('tokenizers/punkt')
-        nltk.data.find('corpora/stopwords')
-    except LookupError:
-        nltk.download('punkt')
-        nltk.download('stopwords')
+    download_nltk_resources()
     
     # Process descriptions
     all_descriptions = [video['description'] for video in videos_data]
@@ -241,12 +245,7 @@ def find_common_title_words(videos_data):
         return [], 0
     
     # Download NLTK resources if not already downloaded
-    try:
-        nltk.data.find('tokenizers/punkt')
-        nltk.data.find('corpora/stopwords')
-    except LookupError:
-        nltk.download('punkt')
-        nltk.download('stopwords')
+    download_nltk_resources()
     
     # Process titles
     all_titles = [video['title'] for video in videos_data]
@@ -447,6 +446,9 @@ def generate_excel_file(videos_data, common_title_words, common_tags, common_wor
 
 # Main application
 def main():
+    # Ensure NLTK resources are downloaded at startup
+    download_nltk_resources()
+    
     # Display content directly without a separate container
     st.title("YouTube Video Analyzer")
     st.write("Enter YouTube video URLs to analyze common patterns and details.")
