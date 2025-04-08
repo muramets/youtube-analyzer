@@ -69,10 +69,26 @@ def get_video_details(api_key, video_ids):
 
 # Function to tokenize text and remove common stop words
 def tokenize_text(text):
-    # Convert to lowercase and split by non-alphanumeric characters
-    words = re.findall(r'\b\w+\b', text.lower())
+    # First, remove URLs completely using regex
+    text = re.sub(r'https?://\S+|www\.\S+', '', text)
     
-    # Common stop words to filter out (including URL components)
+    # Convert to lowercase
+    text = text.lower()
+    
+    # Common multi-word phrases to preserve as single tokens
+    multi_word_phrases = ["hip hop", "lofi beats", "chill mix", "study music", "relaxing music", 
+                         "sleep music", "ambient music", "background music", "piano music",
+                         "jazz music", "lofi chill", "chill out", "deep house"]
+    
+    # Replace spaces in multi-word phrases with underscores
+    for phrase in multi_word_phrases:
+        if phrase in text:
+            text = text.replace(phrase, phrase.replace(' ', '_'))
+    
+    # Now find all words
+    words = re.findall(r'\b\w+\b', text)
+    
+    # Common stop words to filter out
     stop_words = {
         'a', 'an', 'the', 'and', 'or', 'but', 'if', 'because', 'as', 'what',
         'when', 'where', 'how', 'why', 'which', 'who', 'whom', 'this', 'that',
@@ -82,14 +98,12 @@ def tokenize_text(text):
         'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'having',
         'do', 'does', 'did', 'doing', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
         'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'its', 'our', 'their',
-        'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must',
-        # URL components
-        'http', 'https', 'www', 'com', 'org', 'net', 'html', 'htm', 'php', 'aspx',
-        'jsp', 'url', 'uri', 'href'
+        'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must'
     }
     
     # Filter out stop words and short words
-    filtered_words = [word for word in words if word not in stop_words and len(word) > 2]
+    filtered_words = [word.replace('_', ' ') if '_' in word else word 
+                     for word in words if word not in stop_words and len(word) > 2]
     
     return filtered_words
 
@@ -301,8 +315,8 @@ def main():
                 # Add HTML anchor for navigation from tables
                 st.markdown(f"<div id='video-{i+1}'></div>", unsafe_allow_html=True)
                 
-                # Display title with link
-                st.markdown(f"### {i+1}. {video['title']} ([Link](https://www.youtube.com/watch?v={video['id']}))")
+                # Display title with link (smaller heading)
+                st.markdown(f"#### {i+1}. {video['title']} ([Link](https://www.youtube.com/watch?v={video['id']}))")
                 
                 # Create columns for thumbnail and metadata
                 thumb_col, meta_col = st.columns([1, 3])
@@ -366,24 +380,26 @@ def create_word_frequency_df(word_count, total_videos):
     if not word_count:
         return pd.DataFrame()
     
+    # Get videos_data from session state
+    videos_data = st.session_state.videos_data
+    
     # Create dataframe
     data = []
     for word, (count, video_ids) in word_count.items():
         if count > 1:  # Only include words that appear in more than one video
-            # Create clickable links for each video
-            video_links = []
-            for i, video_id in enumerate(video_ids):
-                # Create HTML anchor tags that will jump to the video section
-                video_num = i + 1
-                video_links.append(f'<a href="#video-{video_num}">Video {video_num}</a>')
+            # Create simple list of video numbers
+            video_numbers = []
+            for i, video in enumerate(videos_data):
+                if video['id'] in video_ids:
+                    video_numbers.append(f"Video {i+1}")
             
             # Join with commas
-            videos_html = ", ".join(video_links)
+            videos_text = ", ".join(video_numbers)
             
             data.append({
                 'Word': word,
                 'Frequency': f"{count} out of {total_videos}",
-                'Videos': videos_html,
+                'Videos': videos_text,
                 'Count': count  # For sorting
             })
     
