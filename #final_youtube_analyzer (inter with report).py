@@ -108,20 +108,27 @@ def format_date(date_str):
     date_obj = datetime.strptime(date_str, '%Y-%m-%d')
     return date_obj.strftime('%d %b %Y')
 
-# Find common tags across videos
+# Find common tags across videos (appearing in at least 2 videos)
 def find_common_tags(videos_data):
-    if not videos_data:
-        return [], 0
+    if not videos_data or len(videos_data) < 2:
+        return [], 0, {}
     
     # Collect all unique tags across all videos
     all_tags = set()
     for video in videos_data:
         all_tags.update(video['tags'])
     
-    # Find common tags (intersection of all videos' tags)
-    common_tags = set(videos_data[0]['tags']) if videos_data else set()
-    for video in videos_data[1:]:
-        common_tags = common_tags.intersection(set(video['tags']))
+    # Count occurrences of each tag
+    tag_counts = {}
+    for video in videos_data:
+        for tag in set(video['tags']):  # Use set to count each tag only once per video
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+    
+    # Find tags that appear in at least 2 videos
+    common_tags = {tag: count for tag, count in tag_counts.items() if count >= 2}
+    
+    # Find tags that appear in only one video (non-overlapping)
+    unique_tags = {tag: count for tag, count in tag_counts.items() if count == 1}
     
     # Calculate percentage of common tags out of all unique tags
     result = []
@@ -130,11 +137,11 @@ def find_common_tags(videos_data):
     if all_tags:
         overall_percentage = (len(common_tags) / len(all_tags)) * 100
         
-        # Create result list with individual tag info
-        for tag in common_tags:
-            result.append((tag, overall_percentage))
+        # Create result list with individual tag info and count
+        for tag, count in sorted(common_tags.items(), key=lambda x: x[1], reverse=True):
+            result.append((tag, count, len(videos_data)))
     
-    return result, overall_percentage
+    return result, overall_percentage, unique_tags
 
 # Download all required NLTK resources
 def download_nltk_resources():
@@ -145,10 +152,10 @@ def download_nltk_resources():
         except LookupError:
             nltk.download(resource)
 
-# Find common words in descriptions
+# Find common words in descriptions (appearing in at least 2 videos)
 def find_common_words(videos_data, min_frequency=2):
-    if not videos_data:
-        return [], 0
+    if not videos_data or len(videos_data) < 2:
+        return [], 0, {}
     
     # Download NLTK resources if not already downloaded
     download_nltk_resources()
@@ -161,6 +168,9 @@ def find_common_words(videos_data, min_frequency=2):
     all_unique_words = set()
     stop_words = set(stopwords.words('english') + stopwords.words('russian'))
     
+    # Store words for each video
+    video_words = []
+    
     for description in all_descriptions:
         # Tokenize
         words = word_tokenize(description.lower())
@@ -171,30 +181,38 @@ def find_common_words(videos_data, min_frequency=2):
             if word.isalpha() and word not in stop_words and len(word) > 2
         ]
         
-        all_words_lists.append(set(filtered_words))
+        video_words.append(set(filtered_words))
         all_unique_words.update(filtered_words)
     
-    # Find words that appear in all descriptions
+    # Count occurrences of each word across videos
+    word_counts = {}
+    for words in video_words:
+        for word in words:
+            word_counts[word] = word_counts.get(word, 0) + 1
+    
+    # Find words that appear in at least 2 videos
+    common_words = {word: count for word, count in word_counts.items() if count >= 2}
+    
+    # Find words that appear in only one video (non-overlapping)
+    unique_words = {word: count for word, count in word_counts.items() if count == 1}
+    
+    # Calculate percentage of common words out of all unique words
     result = []
     overall_percentage = 0
     
-    if all_words_lists:
-        common_words = set.intersection(*all_words_lists) if all_words_lists else set()
+    if all_unique_words:
+        overall_percentage = (len(common_words) / len(all_unique_words)) * 100
         
-        # Calculate percentage of common words out of all unique words
-        if all_unique_words:
-            overall_percentage = (len(common_words) / len(all_unique_words)) * 100
-            
-            # Create result list with individual word info
-            for word in common_words:
-                result.append((word, overall_percentage))
+        # Create result list with individual word info and count
+        for word, count in sorted(common_words.items(), key=lambda x: x[1], reverse=True):
+            result.append((word, count, len(videos_data)))
     
-    return result, overall_percentage
+    return result, overall_percentage, unique_words
 
-# Find common words in titles
+# Find common words in titles (appearing in at least 2 videos)
 def find_common_title_words(videos_data):
-    if not videos_data:
-        return [], 0
+    if not videos_data or len(videos_data) < 2:
+        return [], 0, {}
     
     # Download NLTK resources if not already downloaded
     download_nltk_resources()
@@ -207,6 +225,9 @@ def find_common_title_words(videos_data):
     all_unique_words = set()
     stop_words = set(stopwords.words('english') + stopwords.words('russian'))
     
+    # Store words for each video
+    video_words = []
+    
     for title in all_titles:
         # Tokenize
         words = word_tokenize(title.lower())
@@ -217,28 +238,37 @@ def find_common_title_words(videos_data):
             if word.isalpha() and word not in stop_words and len(word) > 2
         ]
         
-        all_words_lists.append(set(filtered_words))
+        video_words.append(set(filtered_words))
         all_unique_words.update(filtered_words)
     
-    # Find words that appear in all titles
+    # Count occurrences of each word across videos
+    word_counts = {}
+    for words in video_words:
+        for word in words:
+            word_counts[word] = word_counts.get(word, 0) + 1
+    
+    # Find words that appear in at least 2 videos
+    common_words = {word: count for word, count in word_counts.items() if count >= 2}
+    
+    # Find words that appear in only one video (non-overlapping)
+    unique_words = {word: count for word, count in word_counts.items() if count == 1}
+    
+    # Calculate percentage of common words out of all unique words
     result = []
     overall_percentage = 0
     
-    if all_words_lists:
-        common_words = set.intersection(*all_words_lists) if all_words_lists else set()
+    if all_unique_words:
+        overall_percentage = (len(common_words) / len(all_unique_words)) * 100
         
-        # Calculate percentage of common words out of all unique words
-        if all_unique_words:
-            overall_percentage = (len(common_words) / len(all_unique_words)) * 100
-            
-            # Create result list with individual word info
-            for word in common_words:
-                result.append((word, overall_percentage))
+        # Create result list with individual word info and count
+        for word, count in sorted(common_words.items(), key=lambda x: x[1], reverse=True):
+            result.append((word, count, len(videos_data)))
     
-    return result, overall_percentage
+    return result, overall_percentage, unique_words
 
 # Function to generate Excel file with recommendations
-def generate_excel_file(videos_data, common_title_words, common_tags, common_words):
+def generate_excel_file(videos_data, common_title_words, common_tags, common_words, 
+                       unique_title_words, unique_tags, unique_desc_words):
     import pandas as pd
     from io import BytesIO
     import importlib.util
@@ -261,13 +291,16 @@ def generate_excel_file(videos_data, common_title_words, common_tags, common_wor
                 video_links.append({'Title': title, 'Link': link})
         
         # Common title words
-        title_words_data = [{'Common Title Words': word} for word, _ in common_title_words] if common_title_words else []
+        title_words_data = [{'Common Title Words': word, 'Appears in': f"{count} out of {total} videos"} 
+                           for word, count, total in common_title_words] if common_title_words else []
         
         # Common tags
-        tags_data = [{'Common Tags': tag} for tag, _ in common_tags] if common_tags else []
+        tags_data = [{'Common Tags': tag, 'Appears in': f"{count} out of {total} videos"} 
+                    for tag, count, total in common_tags] if common_tags else []
         
         # Common description words
-        words_data = [{'Common Description Words': word} for word, _ in common_words] if common_words else []
+        words_data = [{'Common Description Words': word, 'Appears in': f"{count} out of {total} videos"} 
+                     for word, count, total in common_words] if common_words else []
         
         # Create Excel file with pandas
         if openpyxl_available:
@@ -527,18 +560,21 @@ def main():
                 return
             
             # Find common elements
-            common_title_words, title_words_percentage = find_common_title_words(videos_data)
-            common_tags, tags_percentage = find_common_tags(videos_data)
-            common_words, words_percentage = find_common_words(videos_data)
+            common_title_words, title_words_percentage, unique_title_words = find_common_title_words(videos_data)
+            common_tags, tags_percentage, unique_tags = find_common_tags(videos_data)
+            common_words, words_percentage, unique_desc_words = find_common_words(videos_data)
             
             # Store results in session state
             st.session_state.videos_data = videos_data
             st.session_state.common_title_words = common_title_words
             st.session_state.title_words_percentage = title_words_percentage
+            st.session_state.unique_title_words = unique_title_words
             st.session_state.common_tags = common_tags
             st.session_state.tags_percentage = tags_percentage
+            st.session_state.unique_tags = unique_tags
             st.session_state.common_words = common_words
             st.session_state.words_percentage = words_percentage
+            st.session_state.unique_desc_words = unique_desc_words
             st.session_state.analysis_complete = True
     
     # Display analysis results if available
@@ -547,10 +583,13 @@ def main():
         videos_data = st.session_state.videos_data
         common_title_words = st.session_state.common_title_words
         title_words_percentage = st.session_state.title_words_percentage
+        unique_title_words = st.session_state.unique_title_words
         common_tags = st.session_state.common_tags
         tags_percentage = st.session_state.tags_percentage
+        unique_tags = st.session_state.unique_tags
         common_words = st.session_state.common_words
         words_percentage = st.session_state.words_percentage
+        unique_desc_words = st.session_state.unique_desc_words
         
         # Display results
         st.subheader("Analysis Results")
@@ -558,23 +597,68 @@ def main():
         # Common words in titles section
         st.markdown(f"##### Common Words in Titles ({title_words_percentage:.0f}%)")
         if common_title_words:
-            st.write(", ".join([word for word, _ in common_title_words]))
+            # Create a formatted list of words with their occurrence counts
+            title_words_list = [f"{word} (appears in {count} out of {total} videos)" 
+                              for word, count, total in common_title_words]
+            st.write(", ".join(title_words_list))
         else:
             st.write("No common words found across the video titles.")
+            
+        # Non-overlapping words in titles section
+        st.markdown("##### Non-overlapping Words in Titles")
+        if unique_title_words:
+            # Get top 20 unique words for display
+            top_unique_title_words = sorted(unique_title_words.items(), key=lambda x: x[0])[:20]
+            unique_title_list = [f"{word}" for word, _ in top_unique_title_words]
+            st.write(", ".join(unique_title_list))
+            if len(unique_title_words) > 20:
+                st.write(f"...and {len(unique_title_words) - 20} more")
+        else:
+            st.write("No non-overlapping words found in the video titles.")
         
         # Common tags section
         st.markdown(f"##### Common Tags ({tags_percentage:.0f}%)")
         if common_tags:
-            st.write(", ".join([tag for tag, _ in common_tags]))
+            # Create a formatted list of tags with their occurrence counts
+            tags_list = [f"{tag} (appears in {count} out of {total} videos)" 
+                       for tag, count, total in common_tags]
+            st.write(", ".join(tags_list))
         else:
             st.write("No common tags found across the videos.")
+            
+        # Non-overlapping tags section
+        st.markdown("##### Non-overlapping Tags")
+        if unique_tags:
+            # Get top 20 unique tags for display
+            top_unique_tags = sorted(unique_tags.items(), key=lambda x: x[0])[:20]
+            unique_tags_list = [f"{tag}" for tag, _ in top_unique_tags]
+            st.write(", ".join(unique_tags_list))
+            if len(unique_tags) > 20:
+                st.write(f"...and {len(unique_tags) - 20} more")
+        else:
+            st.write("No non-overlapping tags found across the videos.")
         
         # Common words in descriptions section
         st.markdown(f"##### Common Words in Descriptions ({words_percentage:.0f}%)")
         if common_words:
-            st.write(", ".join([word for word, _ in common_words]))
+            # Create a formatted list of words with their occurrence counts
+            words_list = [f"{word} (appears in {count} out of {total} videos)" 
+                        for word, count, total in common_words]
+            st.write(", ".join(words_list))
         else:
             st.write("No common words found across the video descriptions.")
+            
+        # Non-overlapping words in descriptions section
+        st.markdown("##### Non-overlapping Words in Descriptions")
+        if unique_desc_words:
+            # Get top 20 unique words for display
+            top_unique_desc_words = sorted(unique_desc_words.items(), key=lambda x: x[0])[:20]
+            unique_desc_list = [f"{word}" for word, _ in top_unique_desc_words]
+            st.write(", ".join(unique_desc_list))
+            if len(unique_desc_words) > 20:
+                st.write(f"...and {len(unique_desc_words) - 20} more")
+        else:
+            st.write("No non-overlapping words found in the video descriptions.")
         
         # Add a clear divider between Analysis Results and Video Details
         st.divider()
@@ -583,7 +667,8 @@ def main():
         st.subheader("Video Details")
         
         # Add a download button for Excel file with recommendations
-        excel_data = generate_excel_file(videos_data, common_title_words, common_tags, common_words)
+        excel_data = generate_excel_file(videos_data, common_title_words, common_tags, common_words,
+                                       unique_title_words, unique_tags, unique_desc_words)
         
         # Use a key for the download button
         download_button_key = "download_excel_button"
@@ -603,11 +688,32 @@ def main():
             st.success("Excel file downloaded successfully!")
         
         # Extract common elements for highlighting
-        common_title_words_set = {word for word, _ in common_title_words}
-        common_tags_set = {tag for tag, _ in common_tags}
-        common_words_set = {word for word, _ in common_words}
+        common_title_words_set = {word.lower() for word, _, _ in common_title_words}
+        common_tags_set = {tag.lower() for tag, _, _ in common_tags}
+        common_words_set = {word.lower() for word, _, _ in common_words}
         
+        # Calculate match score for each video (for sorting)
         for video in videos_data:
+            # Count matches in title
+            title_matches = sum(1 for word in word_tokenize(video['title'].lower()) 
+                              if word.isalpha() and word in common_title_words_set)
+            
+            # Count matches in tags
+            tag_matches = sum(1 for tag in video['tags'] 
+                            if tag.lower() in common_tags_set)
+            
+            # Count matches in description
+            desc_words = [word for word in word_tokenize(video['description'].lower()) 
+                        if word.isalpha() and word in common_words_set]
+            desc_matches = len(set(desc_words))  # Count unique matches
+            
+            # Total match score
+            video['match_score'] = title_matches + tag_matches + desc_matches
+        
+        # Sort videos by match score (highest to lowest)
+        sorted_videos = sorted(videos_data, key=lambda x: x['match_score'], reverse=True)
+        
+        for video in sorted_videos:
             st.write("---")
             
             # Video title
