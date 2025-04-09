@@ -356,8 +356,16 @@ def main():
                 # Add HTML anchor for navigation from tables
                 st.markdown(f"<div id='video-{i+1}'></div>", unsafe_allow_html=True)
                 
+                # Create highlighted title with common words in green
+                highlighted_title = render_highlighted_text_inline(
+                    video['title'],
+                    analysis_results['title_analysis']['word_count'],
+                    video['id'],
+                    videos_data
+                )
+                
                 # Display title with link (smaller heading)
-                st.markdown(f"#### {i+1}. {video['title']} ([Link](https://www.youtube.com/watch?v={video['id']}))")
+                st.markdown(f"#### {i+1}. {highlighted_title} ([Link](https://www.youtube.com/watch?v={video['id']}))", unsafe_allow_html=True)
                 
                 # Create columns for thumbnail and metadata
                 thumb_col, meta_col = st.columns([1, 3])
@@ -456,7 +464,62 @@ def create_word_frequency_df(word_count, total_videos):
     
     return df
 
-# Function to render highlighted text for tags
+# Function to render highlighted text with placeholders to prevent nested spans
+def render_highlighted_text_inline(text, word_count, current_video_id, videos_data):
+    # Create a map of common words with their videos
+    common_words = {}
+    for word, (count, video_ids) in word_count.items():
+        if count > 1:  # Only include words that appear in more than one video
+            videos_with_word = []
+            for video_id in video_ids:
+                if video_id != current_video_id:
+                    video_idx = next((idx for idx, v in enumerate(videos_data) if v['id'] == video_id), None)
+                    if video_idx is not None:
+                        videos_with_word.append(f"Video {video_idx+1}")
+            
+            if videos_with_word:
+                common_words[word] = videos_with_word
+    
+    # If no common words to highlight, return the original text
+    if not common_words:
+        return text
+    
+    # Use a safer approach to highlight text without causing nested tags
+    highlighted_text = text
+    
+    # Sort words by length (longest first) to avoid partial word matches
+    sorted_words = sorted(common_words.keys(), key=len, reverse=True)
+    
+    # Create a placeholder for each match to avoid overlapping highlights
+    placeholders = {}
+    placeholder_count = 0
+    
+    for word in sorted_words:
+        # Create a regex pattern that matches the word as a whole word only
+        pattern = rf'\b{re.escape(word)}\b'
+        
+        # Find all occurrences of the word
+        for match in re.finditer(pattern, highlighted_text, flags=re.IGNORECASE):
+            # Create a unique placeholder
+            placeholder = f"__PLACEHOLDER_{placeholder_count}__"
+            placeholder_count += 1
+            
+            # Store the original text and the videos info
+            videos_text = ", ".join(common_words[word])
+            placeholders[placeholder] = (match.group(0), videos_text)
+            
+            # Replace with placeholder
+            start, end = match.span()
+            highlighted_text = highlighted_text[:start] + placeholder + highlighted_text[end:]
+    
+    # Now replace all placeholders with properly formatted HTML
+    for placeholder, (original_text, videos_text) in placeholders.items():
+        highlighted_span = f"<span style='color: #006400; font-weight: bold;' title='Also in: {videos_text}'>{original_text}</span>"
+        highlighted_text = highlighted_text.replace(placeholder, highlighted_span)
+    
+    return highlighted_text
+
+# Function to render highlighted text for tags (list format)
 def render_highlighted_text(tags, word_count, current_video_id, videos_data, is_tag=False):
     for tag in tags:
         tag_lower = tag.lower()
