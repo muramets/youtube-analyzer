@@ -484,40 +484,36 @@ def render_highlighted_text_inline(text, word_count, current_video_id, videos_da
     if not common_words:
         return text
     
-    # Use a safer approach to highlight text without causing nested tags
-    highlighted_text = text
+    # Split the text into tokens that can be individually processed
+    # This captures words, spaces, punctuation, etc., as separate items
+    tokens = re.findall(r'(\b\w+\b|\s+|[^\w\s]+)', text)
+    result_parts = []
     
-    # Sort words by length (longest first) to avoid partial word matches
-    sorted_words = sorted(common_words.keys(), key=len, reverse=True)
-    
-    # Create a placeholder for each match to avoid overlapping highlights
-    placeholders = {}
-    placeholder_count = 0
-    
-    for word in sorted_words:
-        # Create a regex pattern that matches the word as a whole word only
-        pattern = rf'\b{re.escape(word)}\b'
-        
-        # Find all occurrences of the word
-        for match in re.finditer(pattern, highlighted_text, flags=re.IGNORECASE):
-            # Create a unique placeholder
-            placeholder = f"__PLACEHOLDER_{placeholder_count}__"
-            placeholder_count += 1
+    # Process each token
+    for token in tokens:
+        # Check if this token is a word (not whitespace or punctuation)
+        if re.match(r'^\w+$', token):
+            token_lower = token.lower()
+            # Check if this exact token is a common word
+            is_highlighted = False
+            for common_word, videos in common_words.items():
+                if token_lower == common_word.lower():
+                    # Add highlighted version of the token
+                    videos_text = ", ".join(videos)
+                    highlighted_token = f"<span style='color: #006400; font-weight: bold;' title='Also in: {videos_text}'>{token}</span>"
+                    result_parts.append(highlighted_token)
+                    is_highlighted = True
+                    break
             
-            # Store the original text and the videos info
-            videos_text = ", ".join(common_words[word])
-            placeholders[placeholder] = (match.group(0), videos_text)
-            
-            # Replace with placeholder
-            start, end = match.span()
-            highlighted_text = highlighted_text[:start] + placeholder + highlighted_text[end:]
+            # If not highlighted, add the original token
+            if not is_highlighted:
+                result_parts.append(token)
+        else:
+            # For non-word tokens (spaces, punctuation), add as-is
+            result_parts.append(token)
     
-    # Now replace all placeholders with properly formatted HTML
-    for placeholder, (original_text, videos_text) in placeholders.items():
-        highlighted_span = f"<span style='color: #006400; font-weight: bold;' title='Also in: {videos_text}'>{original_text}</span>"
-        highlighted_text = highlighted_text.replace(placeholder, highlighted_span)
-    
-    return highlighted_text
+    # Join all parts back together
+    return "".join(result_parts)
 
 # Function to render highlighted text for tags (list format)
 def render_highlighted_text(tags, word_count, current_video_id, videos_data, is_tag=False):
