@@ -487,14 +487,10 @@ def render_highlighted_text(tags, word_count, current_video_id, videos_data, is_
 
 # Function to render highlighted description
 def render_highlighted_description(description, word_count, current_video_id, videos_data):
-    # Tokenize description
-    words = re.findall(r'\b\w+\b', description.lower())
-    processed_words = set()
-    
     # Create a map of common words with their videos
     common_words = {}
     for word, (count, video_ids) in word_count.items():
-        if count > 1 and word not in processed_words:
+        if count > 1:  # Only include words that appear in more than one video
             videos_with_word = []
             for video_id in video_ids:
                 if video_id != current_video_id:
@@ -504,36 +500,51 @@ def render_highlighted_description(description, word_count, current_video_id, vi
             
             if videos_with_word:
                 common_words[word] = videos_with_word
-                processed_words.add(word)
     
-    # Split description into paragraphs and process each
+    # Process the description
     paragraphs = description.split('\n')
+    
     for paragraph in paragraphs:
         if not paragraph.strip():
             st.write("")
             continue
         
-        # To prevent nested span tags, we'll process the paragraph differently
-        # Split the paragraph into words and spaces
-        tokens = re.findall(r'(\b\w+\b|\s+|[^\w\s]+)', paragraph)
-        html_parts = []
+        # Use a safer approach to highlight text without causing nested tags
+        # First, find all words that need highlighting
+        highlighted_paragraph = paragraph
         
-        for token in tokens:
-            # Check if token is a word and if it's a common word
-            token_lower = token.lower()
-            if re.match(r'\b\w+\b', token) and token_lower in common_words:
-                # Highlight the word
-                videos = common_words[token_lower]
-                html_parts.append(f"<span style='color: #006400; font-weight: bold;' title='Also in: {', '.join(videos)}'>{token}</span>")
-            else:
-                # Keep the token as is
-                html_parts.append(token)
+        # Sort words by length (longest first) to avoid partial word matches
+        sorted_words = sorted(common_words.keys(), key=len, reverse=True)
         
-        # Join all parts to form the HTML paragraph
-        html_paragraph = ''.join(html_parts)
+        # Create a placeholder for each match to avoid overlapping highlights
+        placeholders = {}
+        placeholder_count = 0
         
-        # Display the processed paragraph
-        st.markdown(html_paragraph, unsafe_allow_html=True)
+        for word in sorted_words:
+            # Create a regex pattern that matches the word as a whole word only
+            pattern = rf'\b{re.escape(word)}\b'
+            
+            # Find all occurrences of the word
+            for match in re.finditer(pattern, highlighted_paragraph, flags=re.IGNORECASE):
+                # Create a unique placeholder
+                placeholder = f"__PLACEHOLDER_{placeholder_count}__"
+                placeholder_count += 1
+                
+                # Store the original text and the videos info
+                videos_text = ", ".join(common_words[word])
+                placeholders[placeholder] = (match.group(0), videos_text)
+                
+                # Replace with placeholder
+                start, end = match.span()
+                highlighted_paragraph = highlighted_paragraph[:start] + placeholder + highlighted_paragraph[end:]
+        
+        # Now replace all placeholders with properly formatted HTML
+        for placeholder, (original_text, videos_text) in placeholders.items():
+            highlighted_span = f"<span style='color: #006400; font-weight: bold;' title='Also in: {videos_text}'>{original_text}</span>"
+            highlighted_paragraph = highlighted_paragraph.replace(placeholder, highlighted_span)
+        
+        # Display the safely highlighted paragraph
+        st.markdown(highlighted_paragraph, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
