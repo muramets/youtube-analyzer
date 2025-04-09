@@ -513,16 +513,24 @@ def render_highlighted_description(description, word_count, current_video_id, vi
             st.write("")
             continue
         
-        html_paragraph = paragraph
+        # To prevent nested span tags, we'll process the paragraph differently
+        # Split the paragraph into words and spaces
+        tokens = re.findall(r'(\b\w+\b|\s+|[^\w\s]+)', paragraph)
+        html_parts = []
         
-        # Highlight common words
-        for word, videos in common_words.items():
-            # Create regex pattern to match whole word case-insensitively
-            pattern = rf'\b({re.escape(word)})\b'
-            
-            # Replace with highlighted version
-            replacement = f"<span style='color: #006400; font-weight: bold;' title='Also in: {', '.join(videos)}'>\\1</span>"
-            html_paragraph = re.sub(pattern, replacement, html_paragraph, flags=re.IGNORECASE)
+        for token in tokens:
+            # Check if token is a word and if it's a common word
+            token_lower = token.lower()
+            if re.match(r'\b\w+\b', token) and token_lower in common_words:
+                # Highlight the word
+                videos = common_words[token_lower]
+                html_parts.append(f"<span style='color: #006400; font-weight: bold;' title='Also in: {', '.join(videos)}'>{token}</span>")
+            else:
+                # Keep the token as is
+                html_parts.append(token)
+        
+        # Join all parts to form the HTML paragraph
+        html_paragraph = ''.join(html_parts)
         
         # Display the processed paragraph
         st.markdown(html_paragraph, unsafe_allow_html=True)
